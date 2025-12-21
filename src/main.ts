@@ -4,5 +4,20 @@ import { init, version } from './lib/index'
 
 console.log(`Godash Diagrams v${version}`)
 
-// Demo: Initialize diagram in the #app element
-init('#app')
+const textarea = document.querySelector<HTMLTextAreaElement>('#source-input')!
+const initialSource = 'graph TD\n  A-->B\n  A-->C'
+
+// Set initial value
+textarea.value = initialSource
+
+// Initialize diagram with initial source
+init('#app', {
+  diagramSource: initialSource
+})
+
+// Update diagram on input
+textarea.addEventListener('input', () => {
+  init('#app', {
+    diagramSource: textarea.value
+  })
+})

@@ -5,7 +5,18 @@
 
 const DEFAULT_DIAGRAM_CLASS = '.godash-diagram'
 
-export function init(selector?: string): void {
+interface DiagramOptions {
+  diagramSource?: string
+}
+
+function renderDiagram(element: Element, source: string): void {
+  element.innerHTML = `
+    <div>Provided source</div>
+    <pre style="background: #f4f4f4; padding: 1rem; border-radius: 4px; overflow-x: auto;">${source}</pre>
+  `
+}
+
+export function init(selector?: string, options?: DiagramOptions): void {
   const query = selector ?? DEFAULT_DIAGRAM_CLASS
   const elements = document.querySelectorAll(query)
 
@@ -14,8 +25,8 @@ export function init(selector?: string): void {
   }
 
   elements.forEach((element) => {
-    // Your diagram initialization logic here
-    element.innerHTML = '<div>Godash Diagram Initialized</div>'
+    const source = options?.diagramSource ?? element.textContent ?? ''
+    renderDiagram(element, source)
   })
 }
 
