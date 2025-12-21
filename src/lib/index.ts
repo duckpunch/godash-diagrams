@@ -3,17 +3,20 @@
  * This file exports all public APIs that will be available when users include your library
  */
 
-export function initDiagram(element: HTMLElement | string): void {
-  const target = typeof element === 'string'
-    ? document.querySelector(element)
-    : element
+const DEFAULT_DIAGRAM_CLASS = '.godash-diagram'
 
-  if (!target) {
-    throw new Error('Target element not found')
+export function init(selector?: string): void {
+  const query = selector ?? DEFAULT_DIAGRAM_CLASS
+  const elements = document.querySelectorAll(query)
+
+  if (elements.length === 0) {
+    throw new Error(`No elements found for selector: ${query}`)
   }
 
-  // Your diagram initialization logic here
-  target.innerHTML = '<div>Godash Diagram Initialized</div>'
+  elements.forEach((element) => {
+    // Your diagram initialization logic here
+    element.innerHTML = '<div>Godash Diagram Initialized</div>'
+  })
 }
 
 // Export any other public functions/classes here
