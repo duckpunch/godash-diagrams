@@ -3,6 +3,8 @@
  * This file exports all public APIs that will be available when users include your library
  */
 
+import { Board, Move, Coordinate, BLACK, WHITE, EMPTY, toString as godashToString } from 'godash'
+
 const DEFAULT_DIAGRAM_CLASS = '.godash-diagram'
 
 interface DiagramOptions {
@@ -72,10 +74,59 @@ function renderDiagram(element: Element, source: string): void {
     return
   }
 
-  // TODO: Render the actual board
+  // Parse board and create godash Board
+  const dimensions = boardRows.length
+  const moves: any[] = []
+
+  for (let row = 0; row < dimensions; row++) {
+    const line = boardRows[row]
+    let col = 0
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i]
+      if (char === ' ') continue
+
+      // Validate character
+      if (!/^[.+XOxo]$/.test(char)) {
+        renderError(element, `Invalid board character '${char}' at row ${row + 1}, col ${col + 1}. Valid characters: . or + (empty), X or x (black stone), O or o (white stone)`)
+        return
+      }
+
+      let color = EMPTY
+      if (char === 'X' || char === 'x') {
+        // X = black stones in our format, BLACK in godash
+        color = BLACK
+      } else if (char === 'O' || char === 'o') {
+        // O = white stones in our format, WHITE in godash
+        color = WHITE
+      } else if (char === '.' || char === '+') {
+        // . or + = empty
+        color = EMPTY
+      }
+
+      if (color !== EMPTY) {
+        moves.push(Move(Coordinate(row, col), color))
+      }
+      col++
+    }
+  }
+
+  // Create godash board
+  const board = Board(dimensions, ...moves)
+
+  // Convert to string with our desired format (. for empty, O for white, X for black)
+  // Note: godash uses O=BLACK, X=WHITE, +=EMPTY, but we want . =EMPTY, O=WHITE, X=BLACK
+  const boardString = godashToString(board, {
+    [BLACK]: 'X',
+    [WHITE]: 'O',
+    [EMPTY]: '.'
+  })
+
+  // Render
   element.innerHTML = `
     <div>Provided source</div>
     <pre style="background: #f4f4f4; padding: 1rem; border-radius: 4px; overflow-x: auto;">${source}</pre>
+    <div>Godash board output</div>
+    <pre style="background: #f4f4f4; padding: 1rem; border-radius: 4px; overflow-x: auto;">${boardString}</pre>
   `
 }
 
