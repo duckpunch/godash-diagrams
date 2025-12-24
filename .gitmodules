@@ -1,0 +1,6 @@
+[submodule "external/godash"]
+	path = external/godash
+	url = git@github.com:duckpunch/godash.git
+[submodule "external/immutable-js"]
+	path = external/immutable-js
+	url = git@github.com:immutable-js/immutable-js.git
