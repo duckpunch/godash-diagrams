@@ -17,7 +17,7 @@ function renderError(element: Element, message: string): void {
   `
 }
 
-function renderBoardSvg(board: any, dimensions: number): string {
+function renderBoardSvg(board: Board, dimensions: number): string {
   const cellSize = 30
   const margin = 20
   const stoneRadius = cellSize * 0.4
@@ -136,7 +136,7 @@ function renderDiagram(element: Element, source: string): void {
 
   // Parse board and create godash Board
   const dimensions = boardRows.length
-  const moves: any[] = []
+  const moves: Move[] = []
 
   for (let row = 0; row < dimensions; row++) {
     const line = boardRows[row]
