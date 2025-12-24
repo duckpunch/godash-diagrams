@@ -5,7 +5,17 @@ import { init, version } from './lib/index'
 console.log(`Godash Diagrams v${version}`)
 
 const textarea = document.querySelector<HTMLTextAreaElement>('#source-input')!
-const initialSource = 'static\ngraph TD\n  A-->B\n  A-->C'
+const initialSource = `static
+
+. . . . . . . . .
+. . . . . . . . .
+. . + . . . + . .
+. . . O . . . . .
+. . . O X X . . .
+. . X X O . . . .
+. . + . O . + . .
+. . . . . . . . .
+. . . . . . . . .`
 
 // Set initial value
 textarea.value = initialSource
