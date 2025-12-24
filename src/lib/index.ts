@@ -17,6 +17,66 @@ function renderError(element: Element, message: string): void {
   `
 }
 
+function renderBoardSvg(board: any, dimensions: number): string {
+  const cellSize = 30
+  const margin = 20
+  const stoneRadius = cellSize * 0.4
+  const svgSize = (dimensions - 1) * cellSize + margin * 2
+
+  let svg = `<svg width="${svgSize}" height="${svgSize}" xmlns="http://www.w3.org/2000/svg">`
+
+  // Background
+  svg += `<rect width="${svgSize}" height="${svgSize}" fill="#dcb35c"/>`
+
+  // Grid lines
+  const gridEnd = margin + (dimensions - 1) * cellSize
+  for (let i = 0; i < dimensions; i++) {
+    const pos = margin + i * cellSize
+    // Vertical lines
+    svg += `<line x1="${pos}" y1="${margin}" x2="${pos}" y2="${gridEnd}" stroke="#000" stroke-width="1"/>`
+    // Horizontal lines
+    svg += `<line x1="${margin}" y1="${pos}" x2="${gridEnd}" y2="${pos}" stroke="#000" stroke-width="1"/>`
+  }
+
+  // Star points (for standard sizes)
+  const starPoints: [number, number][] = []
+  if (dimensions === 9) {
+    starPoints.push([2, 2], [2, 6], [4, 4], [6, 2], [6, 6])
+  } else if (dimensions === 13) {
+    starPoints.push([3, 3], [3, 9], [6, 6], [9, 3], [9, 9])
+  } else if (dimensions === 19) {
+    starPoints.push([3, 3], [3, 9], [3, 15], [9, 3], [9, 9], [9, 15], [15, 3], [15, 9], [15, 15])
+  }
+
+  for (const [row, col] of starPoints) {
+    const x = margin + col * cellSize
+    const y = margin + row * cellSize
+    svg += `<circle cx="${x}" cy="${y}" r="3" fill="#000"/>`
+  }
+
+  // Stones
+  for (let row = 0; row < dimensions; row++) {
+    for (let col = 0; col < dimensions; col++) {
+      const color = board.moves.get(Coordinate(row, col), EMPTY)
+      if (color !== EMPTY) {
+        const x = margin + col * cellSize
+        const y = margin + row * cellSize
+
+        if (color === BLACK) {
+          // Black stone
+          svg += `<circle cx="${x}" cy="${y}" r="${stoneRadius}" fill="#000" stroke="#000" stroke-width="1"/>`
+        } else if (color === WHITE) {
+          // White stone
+          svg += `<circle cx="${x}" cy="${y}" r="${stoneRadius}" fill="#fff" stroke="#000" stroke-width="1"/>`
+        }
+      }
+    }
+  }
+
+  svg += '</svg>'
+  return svg
+}
+
 function renderDiagram(element: Element, source: string): void {
   const lines = source.split('\n')
 
@@ -113,20 +173,15 @@ function renderDiagram(element: Element, source: string): void {
   // Create godash board
   const board = Board(dimensions, ...moves)
 
-  // Convert to string with our desired format (. for empty, O for white, X for black)
-  // Note: godash uses O=BLACK, X=WHITE, +=EMPTY, but we want . =EMPTY, O=WHITE, X=BLACK
-  const boardString = godashToString(board, {
-    [BLACK]: 'X',
-    [WHITE]: 'O',
-    [EMPTY]: '.'
-  })
+  // Generate SVG
+  const boardSvg = renderBoardSvg(board, dimensions)
 
   // Render
   element.innerHTML = `
     <div>Provided source</div>
     <pre style="background: #f4f4f4; padding: 1rem; border-radius: 4px; overflow-x: auto;">${source}</pre>
-    <div>Godash board output</div>
-    <pre style="background: #f4f4f4; padding: 1rem; border-radius: 4px; overflow-x: auto;">${boardString}</pre>
+    <div style="margin-top: 1rem;">Board</div>
+    <div style="margin-top: 0.5rem;">${boardSvg}</div>
   `
 }
 
