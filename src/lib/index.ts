@@ -5,42 +5,13 @@
 
 import { Board, Move, Coordinate, BLACK, WHITE, EMPTY } from 'godash'
 import { boardToSvg, toError } from './render'
+import { validateBoardRows } from './validate'
 
 const DEFAULT_DIAGRAM_CLASS = '.godash-diagram'
+const SUPPORTED_DIAGRAM_TYPES = ['static'] as const
 
 interface DiagramOptions {
   diagramSource?: string
-}
-
-function parseBoardRows(lines: string[], startIndex: number): [number, number] {
-  // Collect consecutive non-empty board rows
-  const boardRows: string[] = []
-  let endIndex = startIndex
-
-  for (let i = startIndex; i < lines.length; i++) {
-    const line = lines[i]
-    if (line.trim() === '') {
-      // Empty line ends board definition
-      endIndex = i
-      break
-    }
-    boardRows.push(line)
-    endIndex = i + 1
-  }
-
-  if (boardRows.length === 0) {
-    throw new Error('Board definition is empty')
-  }
-
-  // Validate all rows have same number of non-space characters (rectangle)
-  const columnCounts = boardRows.map(row => row.replace(/\s/g, '').length)
-  const firstColumnCount = columnCounts[0]
-
-  if (!columnCounts.every(count => count === firstColumnCount)) {
-    throw new Error('All board rows must have the same number of non-space characters')
-  }
-
-  return [startIndex, endIndex]
 }
 
 function renderDiagram(element: Element, source: string): void {
@@ -53,8 +24,8 @@ function renderDiagram(element: Element, source: string): void {
 
   // Parse first line - must be diagram type
   const diagramType = lines[0].trim()
-  if (diagramType !== 'static') {
-    element.innerHTML = toError('Unsupported diagram type')
+  if (!SUPPORTED_DIAGRAM_TYPES.includes(diagramType as any)) {
+    element.innerHTML = toError(`Unsupported diagram type "${diagramType}". Supported types: ${SUPPORTED_DIAGRAM_TYPES.join(', ')}`)
     return
   }
 
@@ -69,10 +40,10 @@ function renderDiagram(element: Element, source: string): void {
     return
   }
 
-  // Parse board rows
+  // Validate board rows
   let boardEndIndex: number
   try {
-    [boardStartIndex, boardEndIndex] = parseBoardRows(lines, boardStartIndex)
+    [boardStartIndex, boardEndIndex] = validateBoardRows(lines, boardStartIndex)
   } catch (error) {
     element.innerHTML = toError(error instanceof Error ? error.message : String(error))
     return

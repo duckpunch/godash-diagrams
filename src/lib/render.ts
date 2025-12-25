@@ -6,15 +6,18 @@ export function toError(message: string): string {
   `
 }
 
-export function boardToSvg(board: Board, rowCount: number, columnCount: number): string {
+export function boardToSvg(board: Board, rowCount?: number, columnCount?: number): string {
   const boardSize = board.dimensions
+  const actualRowCount = rowCount ?? boardSize
+  const actualColumnCount = columnCount ?? boardSize
+
   const cellSize = 30
   const margin = cellSize  // Full cell margin on each side
   const stoneRadius = cellSize * 0.4
-  const fullColumns = boardSize === columnCount
-  const fullRows = boardSize === rowCount
-  const svgWidth = (fullColumns ? columnCount - 1 : columnCount) * cellSize + margin * 2
-  const svgHeight = (fullRows ? rowCount - 1 : rowCount) * cellSize + margin * 2
+  const fullColumns = boardSize === actualColumnCount
+  const fullRows = boardSize === actualRowCount
+  const svgWidth = (fullColumns ? actualColumnCount - 1 : actualColumnCount) * cellSize + margin * 2
+  const svgHeight = (fullRows ? actualRowCount - 1 : actualRowCount) * cellSize + margin * 2
 
   let svg = `<svg width="${svgWidth}" height="${svgHeight}" xmlns="http://www.w3.org/2000/svg">`
 
@@ -23,21 +26,21 @@ export function boardToSvg(board: Board, rowCount: number, columnCount: number):
 
   // Grid lines
   // Determine if board continues beyond visible area
-  const continuesRight = columnCount < boardSize
-  const continuesDown = rowCount < boardSize
+  const continuesRight = actualColumnCount < boardSize
+  const continuesDown = actualRowCount < boardSize
 
   // Grid end points - extend to next position if board continues
-  const gridEndX = margin + (continuesRight ? columnCount : columnCount - 1) * cellSize
-  const gridEndY = margin + (continuesDown ? rowCount : rowCount - 1) * cellSize
+  const gridEndX = margin + (continuesRight ? actualColumnCount : actualColumnCount - 1) * cellSize
+  const gridEndY = margin + (continuesDown ? actualRowCount : actualRowCount - 1) * cellSize
 
   // Vertical lines - draw for all visible columns
-  for (let i = 0; i < columnCount; i++) {
+  for (let i = 0; i < actualColumnCount; i++) {
     const x = margin + i * cellSize
     svg += `<line x1="${x}" y1="${margin}" x2="${x}" y2="${gridEndY}" stroke="#000" stroke-width="1"/>`
   }
 
   // Horizontal lines - draw for all visible rows
-  for (let i = 0; i < rowCount; i++) {
+  for (let i = 0; i < actualRowCount; i++) {
     const y = margin + i * cellSize
     svg += `<line x1="${margin}" y1="${y}" x2="${gridEndX}" y2="${y}" stroke="#000" stroke-width="1"/>`
   }
@@ -54,7 +57,7 @@ export function boardToSvg(board: Board, rowCount: number, columnCount: number):
 
   // Only draw star points that are visible in our view
   for (const [row, col] of allStarPoints) {
-    if (row < rowCount && col < columnCount) {
+    if (row < actualRowCount && col < actualColumnCount) {
       const x = margin + col * cellSize
       const y = margin + row * cellSize
       svg += `<circle cx="${x}" cy="${y}" r="3" fill="#000"/>`
@@ -62,8 +65,8 @@ export function boardToSvg(board: Board, rowCount: number, columnCount: number):
   }
 
   // Stones
-  for (let row = 0; row < rowCount; row++) {
-    for (let col = 0; col < columnCount; col++) {
+  for (let row = 0; row < actualRowCount; row++) {
+    for (let col = 0; col < actualColumnCount; col++) {
       const color = board.moves.get(Coordinate(row, col), EMPTY)
       if (color !== EMPTY) {
         const x = margin + col * cellSize
