@@ -12,6 +12,37 @@ interface DiagramOptions {
   diagramSource?: string
 }
 
+function parseBoardRows(lines: string[], startIndex: number): [number, number] {
+  // Collect consecutive non-empty board rows
+  const boardRows: string[] = []
+  let endIndex = startIndex
+
+  for (let i = startIndex; i < lines.length; i++) {
+    const line = lines[i]
+    if (line.trim() === '') {
+      // Empty line ends board definition
+      endIndex = i
+      break
+    }
+    boardRows.push(line)
+    endIndex = i + 1
+  }
+
+  if (boardRows.length === 0) {
+    throw new Error('Board definition is empty')
+  }
+
+  // Validate all rows have same number of non-space characters (rectangle)
+  const columnCounts = boardRows.map(row => row.replace(/\s/g, '').length)
+  const firstColumnCount = columnCounts[0]
+
+  if (!columnCounts.every(count => count === firstColumnCount)) {
+    throw new Error('All board rows must have the same number of non-space characters')
+  }
+
+  return [startIndex, endIndex]
+}
+
 function renderDiagram(element: Element, source: string): void {
   const lines = source.split('\n')
 
@@ -38,24 +69,17 @@ function renderDiagram(element: Element, source: string): void {
     return
   }
 
-  // Collect consecutive non-empty board rows
-  const boardRows: string[] = []
-  let boardEndIndex = boardStartIndex
-  for (let i = boardStartIndex; i < lines.length; i++) {
-    const line = lines[i]
-    if (line.trim() === '') {
-      // Empty line ends board definition
-      boardEndIndex = i
-      break
-    }
-    boardRows.push(line)
-    boardEndIndex = i + 1
-  }
-
-  if (boardRows.length === 0) {
-    element.innerHTML = toError('Board definition is empty')
+  // Parse board rows
+  let boardEndIndex: number
+  try {
+    [boardStartIndex, boardEndIndex] = parseBoardRows(lines, boardStartIndex)
+  } catch (error) {
+    element.innerHTML = toError(error instanceof Error ? error.message : String(error))
     return
   }
+
+  // Get board rows for further processing
+  const boardRows = lines.slice(boardStartIndex, boardEndIndex)
 
   // Parse options (YAML-like syntax after board definition)
   const parsedOptions: Record<string, string> = {}
@@ -71,16 +95,8 @@ function renderDiagram(element: Element, source: string): void {
     }
   }
 
-  // Validate all rows have same number of non-space characters
-  const columnCounts = boardRows.map(row => row.replace(/\s/g, '').length)
-  const firstColumnCount = columnCounts[0]
-
-  if (!columnCounts.every(count => count === firstColumnCount)) {
-    element.innerHTML = toError('All board rows must have the same number of non-space characters')
-    return
-  }
-
   // Validate square board (rows === columns)
+  const firstColumnCount = boardRows[0].replace(/\s/g, '').length
   if (boardRows.length !== firstColumnCount) {
     element.innerHTML = toError(`Board must be square (found ${boardRows.length} rows but ${firstColumnCount} columns)`)
     return
