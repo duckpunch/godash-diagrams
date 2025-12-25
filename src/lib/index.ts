@@ -17,7 +17,8 @@ function renderError(element: Element, message: string): void {
   `
 }
 
-function renderBoardSvg(board: Board, dimensions: number): string {
+function renderBoardSvg(board: Board): string {
+  const dimensions = board.dimensions
   const cellSize = 30
   const margin = 20
   const stoneRadius = cellSize * 0.4
@@ -174,15 +175,10 @@ function renderDiagram(element: Element, source: string): void {
   const board = Board(dimensions, ...moves)
 
   // Generate SVG
-  const boardSvg = renderBoardSvg(board, dimensions)
+  const boardSvg = renderBoardSvg(board)
 
   // Render
-  element.innerHTML = `
-    <div>Provided source</div>
-    <pre style="background: #f4f4f4; padding: 1rem; border-radius: 4px; overflow-x: auto;">${source}</pre>
-    <div style="margin-top: 1rem;">Board</div>
-    <div style="margin-top: 0.5rem;">${boardSvg}</div>
-  `
+  element.innerHTML = boardSvg
 }
 
 export function init(selector?: string, options?: DiagramOptions): void {
