@@ -168,7 +168,7 @@ function renderDiagram(element: Element, source: string): void {
   const board = Board(dimensions, ...moves)
 
   // Generate SVG
-  const boardSvg = boardToSvg(board)
+  const boardSvg = boardToSvg(board, rowCount, columnCount)
 
   // Render
   let output = boardSvg
