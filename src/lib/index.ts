@@ -95,18 +95,44 @@ function renderDiagram(element: Element, source: string): void {
     }
   }
 
-  // Validate square board (rows === columns)
-  const firstColumnCount = boardRows[0].replace(/\s/g, '').length
-  if (boardRows.length !== firstColumnCount) {
-    element.innerHTML = toError(`Board must be square (found ${boardRows.length} rows but ${firstColumnCount} columns)`)
+  // Get row and column counts
+  const rowCount = boardRows.length
+  const columnCount = boardRows[0].replace(/\s/g, '').length
+  const isSquare = rowCount === columnCount
+
+  // Validate size option if present
+  let boardSize: number | undefined
+  if (parsedOptions.size) {
+    const sizeValue = parseInt(parsedOptions.size, 10)
+    if (isNaN(sizeValue) || sizeValue <= 1 || sizeValue > 19) {
+      element.innerHTML = toError('Size must be a positive integer greater than 1 and less than or equal to 19')
+      return
+    }
+    boardSize = sizeValue
+
+    // Validate row/column counts don't exceed size
+    if (rowCount > boardSize || columnCount > boardSize) {
+      element.innerHTML = toError(`Board dimensions (${rowCount}x${columnCount}) exceed specified size (${boardSize})`)
+      return
+    }
+  }
+
+  // If rectangle (not square), size is required
+  if (!isSquare && !boardSize) {
+    element.innerHTML = toError(`Rectangle boards require a "size" option (found ${rowCount}x${columnCount} board)`)
     return
   }
 
+  // For square boards without size option, use board dimensions
+  if (!boardSize) {
+    boardSize = rowCount
+  }
+
   // Parse board and create godash Board
-  const dimensions = boardRows.length
+  const dimensions = boardSize
   const moves: Move[] = []
 
-  for (let row = 0; row < dimensions; row++) {
+  for (let row = 0; row < rowCount; row++) {
     const line = boardRows[row]
     let col = 0
     for (let i = 0; i < line.length; i++) {
