@@ -15,7 +15,10 @@ const initialSource = `static
 . . X X O . . . .
 . . + . O . + . .
 . . . . . . . . .
-. . . . . . . . .`
+. . . . . . . . .
+
+title: Example Board
+description: A simple 9x9 position`
 
 // Set initial value
 textarea.value = initialSource

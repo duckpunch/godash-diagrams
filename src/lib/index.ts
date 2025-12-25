@@ -40,18 +40,35 @@ function renderDiagram(element: Element, source: string): void {
 
   // Collect consecutive non-empty board rows
   const boardRows: string[] = []
+  let boardEndIndex = boardStartIndex
   for (let i = boardStartIndex; i < lines.length; i++) {
     const line = lines[i]
     if (line.trim() === '') {
       // Empty line ends board definition
+      boardEndIndex = i
       break
     }
     boardRows.push(line)
+    boardEndIndex = i + 1
   }
 
   if (boardRows.length === 0) {
     element.innerHTML = toError('Board definition is empty')
     return
+  }
+
+  // Parse options (YAML-like syntax after board definition)
+  const parsedOptions: Record<string, string> = {}
+  for (let i = boardEndIndex; i < lines.length; i++) {
+    const line = lines[i].trim()
+    if (line === '') continue // Skip empty lines
+
+    const colonIndex = line.indexOf(':')
+    if (colonIndex > 0) {
+      const key = line.substring(0, colonIndex).trim()
+      const value = line.substring(colonIndex + 1).trim()
+      parsedOptions[key] = value
+    }
   }
 
   // Validate all rows have same number of non-space characters
@@ -112,7 +129,15 @@ function renderDiagram(element: Element, source: string): void {
   const boardSvg = boardToSvg(board)
 
   // Render
-  element.innerHTML = boardSvg
+  let output = boardSvg
+
+  // Display parsed options (for debugging)
+  if (Object.keys(parsedOptions).length > 0) {
+    output += `<div style="margin-top: 1rem;">Parsed Options:</div>`
+    output += `<pre style="background: #f4f4f4; padding: 1rem; border-radius: 4px; margin-top: 0.5rem; overflow-x: auto;">${JSON.stringify(parsedOptions, null, 2)}</pre>`
+  }
+
+  element.innerHTML = output
 }
 
 export function init(selector?: string, options?: DiagramOptions): void {
