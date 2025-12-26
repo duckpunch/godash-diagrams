@@ -8,27 +8,18 @@ import { boardToSvg, toError } from './render'
 import { validateBoardRows } from './validate'
 
 const DEFAULT_DIAGRAM_CLASS = '.godash-diagram'
-const SUPPORTED_DIAGRAM_TYPES = ['static'] as const
+
+const DIAGRAM_TYPES = {
+  static: true,
+} as const
+
+type DiagramType = keyof typeof DIAGRAM_TYPES
 
 interface DiagramOptions {
   diagramSource?: string
 }
 
-function renderDiagram(element: Element, source: string): void {
-  const lines = source.split('\n')
-
-  if (lines.length === 0) {
-    element.innerHTML = toError('Empty diagram source')
-    return
-  }
-
-  // Parse first line - must be diagram type
-  const diagramType = lines[0].trim()
-  if (!SUPPORTED_DIAGRAM_TYPES.includes(diagramType as any)) {
-    element.innerHTML = toError(`Unsupported diagram type "${diagramType}". Supported types: ${SUPPORTED_DIAGRAM_TYPES.join(', ')}`)
-    return
-  }
-
+function renderStaticDiagram(element: Element, lines: string[]): void {
   // Find where board definition starts (skip empty lines after type)
   let boardStartIndex = 1
   while (boardStartIndex < lines.length && lines[boardStartIndex].trim() === '') {
@@ -151,6 +142,28 @@ function renderDiagram(element: Element, source: string): void {
   }
 
   element.innerHTML = output
+}
+
+function renderDiagram(element: Element, source: string): void {
+  const lines = source.split('\n')
+
+  if (lines.length === 0) {
+    element.innerHTML = toError('Empty diagram source')
+    return
+  }
+
+  // Parse first line - must be diagram type
+  const diagramType = lines[0].trim()
+
+  // Dispatch to appropriate renderer based on diagram type
+  switch (diagramType as DiagramType) {
+    case 'static':
+      renderStaticDiagram(element, lines)
+      break
+    default:
+      element.innerHTML = toError(`Unsupported diagram type "${diagramType}". Supported types: ${Object.keys(DIAGRAM_TYPES).join(', ')}`)
+      return
+  }
 }
 
 export function init(selector?: string, options?: DiagramOptions): void {
