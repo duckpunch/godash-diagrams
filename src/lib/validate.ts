@@ -39,7 +39,7 @@ export function validateBoardRows(lines: string[], startIndex: number): [number,
   return [startIndex, endIndex]
 }
 
-export function validateBoard(lines: string[], allowEmpty: boolean = false): ParsedBoard {
+export function validateBoard(lines: string[], allowEmpty: boolean = false, validateCharacters: boolean = true): ParsedBoard {
   // Find where board definition starts (skip empty lines after type)
   let boardStartIndex = 1
   while (boardStartIndex < lines.length && lines[boardStartIndex].trim() === '') {
@@ -113,7 +113,8 @@ export function validateBoard(lines: string[], allowEmpty: boolean = false): Par
       board,
       rowCount: boardSize,
       columnCount: boardSize,
-      configStartIndex: boardEndIndex
+      configStartIndex: boardEndIndex,
+      otherMarks: {}
     }
   }
 
@@ -147,6 +148,8 @@ export function validateBoard(lines: string[], allowEmpty: boolean = false): Par
 
   // Parse board and create moves
   const moves: Move[] = []
+  const otherMarks: Record<string, Coordinate[]> = {}
+
   for (let row = 0; row < boardRows.length; row++) {
     const line = boardRows[row]
     let col = 0
@@ -154,8 +157,10 @@ export function validateBoard(lines: string[], allowEmpty: boolean = false): Par
       const char = line[i]
       if (char === ' ') continue
 
-      // Validate character
-      if (!/^[.+XOxo]$/.test(char)) {
+      // Check if character is a known board character
+      const isKnownChar = /^[.+XOxo]$/.test(char)
+
+      if (validateCharacters && !isKnownChar) {
         throw new ValidationError(`Invalid board character '${char}' at row ${row + 1}, col ${col + 1}. Valid characters: . or + (empty), X or x (black stone), O or o (white stone)`)
       }
 
@@ -166,6 +171,14 @@ export function validateBoard(lines: string[], allowEmpty: boolean = false): Par
         color = WHITE
       } else if (char === '.' || char === '+') {
         color = EMPTY
+      } else {
+        // Other mark - collect if validation is off
+        if (!validateCharacters) {
+          if (!otherMarks[char]) {
+            otherMarks[char] = []
+          }
+          otherMarks[char].push(Coordinate(row, col))
+        }
       }
 
       if (color !== EMPTY) {
@@ -182,6 +195,7 @@ export function validateBoard(lines: string[], allowEmpty: boolean = false): Par
     board,
     rowCount,
     columnCount,
-    configStartIndex: boardEndIndex
+    configStartIndex: boardEndIndex,
+    otherMarks
   }
 }

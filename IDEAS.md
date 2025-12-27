@@ -69,7 +69,9 @@ auto-response
 . . . . . . . . .
 . . . . . . . . .
 
-start: black
+to-play: black
+black: C,D,E,F
+white: A,B,G,H
 
 C: Tengen opening
 C->G: Attach

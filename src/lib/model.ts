@@ -8,6 +8,7 @@ export interface ParsedBoard {
   rowCount: number
   columnCount: number
   configStartIndex: number
+  otherMarks: Record<string, Coordinate[]>
 }
 
 export interface IDiagram {
