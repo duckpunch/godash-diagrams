@@ -1,3 +1,4 @@
+import type { Color } from 'godash'
 import { Board, Move, Coordinate, BLACK, WHITE, isLegalMove, addMove } from 'godash'
 import { validateBoard } from './validate'
 import { boardToSvg } from './render'
@@ -59,21 +60,93 @@ export class StaticDiagram implements IDiagram {
   }
 }
 
+type HistoryEntry =
+  | { type: 'move'; move: Move }
+  | { type: 'pass'; color: Color }
+
 export class FreeplayDiagram implements IDiagram {
   private parsedBoard: ParsedBoard
   private lines: string[]
   private element: Element
   private currentBoard: Board
-  private moves: Move[]
+  private initialBoard: Board
+  private history: HistoryEntry[]
+  private currentMoveIndex: number // -1 means no moves yet
   private isBlackTurn: boolean
 
   constructor(element: Element, lines: string[]) {
     this.element = element
     this.lines = lines
     this.parsedBoard = validateBoard(lines, true)
+    this.initialBoard = this.parsedBoard.board
     this.currentBoard = this.parsedBoard.board
-    this.moves = []
+    this.history = []
+    this.currentMoveIndex = -1
     this.isBlackTurn = true
+  }
+
+  private rebuildBoard(): void {
+    // Start with initial board
+    let board = this.initialBoard
+
+    // Apply moves up to currentMoveIndex
+    for (let i = 0; i <= this.currentMoveIndex; i++) {
+      const entry = this.history[i]
+      if (entry.type === 'move') {
+        board = addMove(board, entry.move)
+      }
+      // Pass moves don't change the board
+    }
+
+    this.currentBoard = board
+
+    // Update whose turn it is based on history
+    if (this.currentMoveIndex === -1) {
+      this.isBlackTurn = true
+    } else {
+      const lastEntry = this.history[this.currentMoveIndex]
+      const lastColor = lastEntry.type === 'move' ? lastEntry.move.color : lastEntry.color
+      this.isBlackTurn = lastColor === WHITE
+    }
+  }
+
+  private undo(): void {
+    if (this.currentMoveIndex >= 0) {
+      this.currentMoveIndex--
+      this.rebuildBoard()
+      this.render()
+    }
+  }
+
+  private redo(): void {
+    if (this.currentMoveIndex < this.history.length - 1) {
+      this.currentMoveIndex++
+      this.rebuildBoard()
+      this.render()
+    }
+  }
+
+  private pass(): void {
+    // Truncate history if we're not at the end
+    this.history = this.history.slice(0, this.currentMoveIndex + 1)
+
+    // Add pass to history
+    const color = this.isBlackTurn ? BLACK : WHITE
+    this.history.push({ type: 'pass', color })
+    this.currentMoveIndex++
+
+    // Toggle turn
+    this.isBlackTurn = !this.isBlackTurn
+
+    this.render()
+  }
+
+  private reset(): void {
+    this.history = []
+    this.currentMoveIndex = -1
+    this.currentBoard = this.initialBoard
+    this.isBlackTurn = true
+    this.render()
   }
 
   render(): void {
@@ -98,13 +171,28 @@ export class FreeplayDiagram implements IDiagram {
     // Generate SVG using current board state
     const boardSvg = boardToSvg(this.currentBoard, rowCount, columnCount)
 
-    // Create container with turn indicator, SVG, and click info
+    // Create container with turn indicator, SVG, and buttons
     const turnInfoId = `turn-info-${Math.random().toString(36).substr(2, 9)}`
-    const clickInfoId = `click-info-${Math.random().toString(36).substr(2, 9)}`
+    const undoButtonId = `undo-${Math.random().toString(36).substr(2, 9)}`
+    const redoButtonId = `redo-${Math.random().toString(36).substr(2, 9)}`
+    const passButtonId = `pass-${Math.random().toString(36).substr(2, 9)}`
+    const resetButtonId = `reset-${Math.random().toString(36).substr(2, 9)}`
+
     let output = `<div class="freeplay-container">`
     output += `<div id="${turnInfoId}" style="margin-bottom: 1rem; padding: 0.5rem; font-weight: 600; font-size: 1.1rem;">${this.isBlackTurn ? 'Black' : 'White'} to play</div>`
     output += boardSvg
-    output += `<div id="${clickInfoId}" style="margin-top: 1rem; padding: 0.5rem; background: #f9f9f9; border-radius: 4px;">Click on the board to place a stone</div>`
+
+    // Control buttons
+    const buttonStyle = 'padding: 0.5rem 1rem; margin: 0.5rem 0.25rem; border: 1px solid #ccc; border-radius: 4px; background: #fff; cursor: pointer; font-size: 0.9rem;'
+    const disabledStyle = 'padding: 0.5rem 1rem; margin: 0.5rem 0.25rem; border: 1px solid #ccc; border-radius: 4px; background: #f0f0f0; cursor: not-allowed; font-size: 0.9rem; color: #999;'
+
+    output += `<div style="margin-top: 1rem;">`
+    output += `<button id="${undoButtonId}" style="${this.currentMoveIndex >= 0 ? buttonStyle : disabledStyle}" ${this.currentMoveIndex < 0 ? 'disabled' : ''}>← Undo</button>`
+    output += `<button id="${redoButtonId}" style="${this.currentMoveIndex < this.history.length - 1 ? buttonStyle : disabledStyle}" ${this.currentMoveIndex >= this.history.length - 1 ? 'disabled' : ''}>Redo →</button>`
+    output += `<button id="${passButtonId}" style="${buttonStyle}">Pass</button>`
+    output += `<button id="${resetButtonId}" style="${buttonStyle}">Reset</button>`
+    output += `</div>`
+
     output += `</div>`
 
     // Display parsed options (for debugging)
@@ -117,10 +205,12 @@ export class FreeplayDiagram implements IDiagram {
 
     // Add click handler to SVG
     const svg = element.querySelector('svg')
-    const clickInfo = document.getElementById(clickInfoId)
-    const turnInfo = document.getElementById(turnInfoId)
+    const undoButton = document.getElementById(undoButtonId)
+    const redoButton = document.getElementById(redoButtonId)
+    const passButton = document.getElementById(passButtonId)
+    const resetButton = document.getElementById(resetButtonId)
 
-    if (svg && clickInfo && turnInfo) {
+    if (svg) {
       svg.style.cursor = 'pointer'
 
       svg.addEventListener('click', (event: Event) => {
@@ -143,28 +233,40 @@ export class FreeplayDiagram implements IDiagram {
 
           // Check if move is legal
           if (isLegalMove(this.currentBoard, move)) {
-            // Add move and update board
-            this.currentBoard = addMove(this.currentBoard, move)
-            this.moves.push(move)
+            // Truncate history if we're not at the end
+            this.history = this.history.slice(0, this.currentMoveIndex + 1)
 
-            // Toggle turn
-            this.isBlackTurn = !this.isBlackTurn
+            // Add move to history
+            this.history.push({ type: 'move', move })
+            this.currentMoveIndex++
+
+            // Update board and turn
+            this.rebuildBoard()
 
             // Re-render the diagram
             this.render()
-          } else {
-            if (clickInfo) {
-              clickInfo.innerHTML = `Illegal move at (${row}, ${col})`
-              clickInfo.style.background = '#fee2e2'
-              clickInfo.style.color = '#991b1b'
-            }
           }
-        } else {
-          if (clickInfo) {
-            clickInfo.innerHTML = `Clicked outside board bounds`
-          }
+          // Silently ignore illegal moves
         }
+        // Silently ignore clicks outside bounds
       })
+    }
+
+    // Add button event handlers
+    if (undoButton) {
+      undoButton.addEventListener('click', () => this.undo())
+    }
+
+    if (redoButton) {
+      redoButton.addEventListener('click', () => this.redo())
+    }
+
+    if (passButton) {
+      passButton.addEventListener('click', () => this.pass())
+    }
+
+    if (resetButton) {
+      resetButton.addEventListener('click', () => this.reset())
     }
   }
 }
