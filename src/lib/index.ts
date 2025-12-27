@@ -5,34 +5,33 @@
 
 import { boardToSvg, toError } from './render'
 import { validateBoard, ValidationError } from './validate'
+import type { Diagram, DiagramType, ParsedBoard } from './model'
+import { DIAGRAM_TYPES, StaticDiagram, FreeplayDiagram } from './model'
 
 const DEFAULT_DIAGRAM_CLASS = '.godash-diagram'
-
-const DIAGRAM_TYPES = {
-  static: true,
-  freeplay: true,
-} as const
-
-type DiagramType = keyof typeof DIAGRAM_TYPES
 
 interface DiagramOptions {
   diagramSource?: string
 }
 
-function renderStaticDiagram(element: Element, lines: string[]): void {
-  // Validate and parse board
-  let parsedBoard
-  try {
-    parsedBoard = validateBoard(lines)
-  } catch (error) {
-    if (error instanceof ValidationError) {
-      element.innerHTML = toError(error.message)
-    } else {
-      element.innerHTML = toError(error instanceof Error ? error.message : String(error))
-    }
-    return
+function parseDiagram(lines: string[]): Diagram {
+  if (lines.length === 0) {
+    throw new ValidationError('Empty diagram source')
   }
 
+  const diagramType = lines[0].trim()
+
+  switch (diagramType as DiagramType) {
+    case 'static':
+      return new StaticDiagram(validateBoard(lines))
+    case 'freeplay':
+      return new FreeplayDiagram(validateBoard(lines, true))
+    default:
+      throw new ValidationError(`Unsupported diagram type "${diagramType}". Supported types: ${Object.keys(DIAGRAM_TYPES).join(', ')}`)
+  }
+}
+
+function renderStaticDiagram(element: Element, parsedBoard: ParsedBoard, lines: string[]): void {
   const { board, rowCount, columnCount, configStartIndex } = parsedBoard
 
   // Parse options for display (YAML-like syntax after board definition)
@@ -64,20 +63,7 @@ function renderStaticDiagram(element: Element, lines: string[]): void {
   element.innerHTML = output
 }
 
-function renderFreeplayDiagram(element: Element, lines: string[]): void {
-  // Validate and parse board (allow empty boards with size option)
-  let parsedBoard
-  try {
-    parsedBoard = validateBoard(lines, true)
-  } catch (error) {
-    if (error instanceof ValidationError) {
-      element.innerHTML = toError(error.message)
-    } else {
-      element.innerHTML = toError(error instanceof Error ? error.message : String(error))
-    }
-    return
-  }
-
+function renderFreeplayDiagram(element: Element, parsedBoard: ParsedBoard, lines: string[]): void {
   const { board, rowCount, columnCount, configStartIndex } = parsedBoard
 
   // Parse options for display (YAML-like syntax after board definition)
@@ -154,25 +140,24 @@ function renderFreeplayDiagram(element: Element, lines: string[]): void {
 function renderDiagram(element: Element, source: string): void {
   const lines = source.split('\n')
 
-  if (lines.length === 0) {
-    element.innerHTML = toError('Empty diagram source')
+  // Parse diagram
+  let diagram: Diagram
+  try {
+    diagram = parseDiagram(lines)
+  } catch (error) {
+    if (error instanceof ValidationError) {
+      element.innerHTML = toError(error.message)
+    } else {
+      element.innerHTML = toError(error instanceof Error ? error.message : String(error))
+    }
     return
   }
 
-  // Parse first line - must be diagram type
-  const diagramType = lines[0].trim()
-
   // Dispatch to appropriate renderer based on diagram type
-  switch (diagramType as DiagramType) {
-    case 'static':
-      renderStaticDiagram(element, lines)
-      break
-    case 'freeplay':
-      renderFreeplayDiagram(element, lines)
-      break
-    default:
-      element.innerHTML = toError(`Unsupported diagram type "${diagramType}". Supported types: ${Object.keys(DIAGRAM_TYPES).join(', ')}`)
-      return
+  if (diagram instanceof StaticDiagram) {
+    renderStaticDiagram(element, diagram.parsedBoard, lines)
+  } else if (diagram instanceof FreeplayDiagram) {
+    renderFreeplayDiagram(element, diagram.parsedBoard, lines)
   }
 }
 

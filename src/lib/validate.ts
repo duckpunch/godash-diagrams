@@ -1,17 +1,11 @@
 import { Board, Move, Coordinate, BLACK, WHITE, EMPTY } from 'godash'
+import type { ParsedBoard } from './model'
 
 export class ValidationError extends Error {
   constructor(message: string) {
     super(message)
     this.name = 'ValidationError'
   }
-}
-
-export interface ParsedBoard {
-  board: Board
-  rowCount: number
-  columnCount: number
-  configStartIndex: number
 }
 
 export function validateBoardRows(lines: string[], startIndex: number): [number, number] {
