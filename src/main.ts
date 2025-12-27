@@ -5,7 +5,7 @@ import { init, version } from './lib/index'
 console.log(`Godash Diagrams v${version}`)
 
 const textarea = document.querySelector<HTMLTextAreaElement>('#source-input')!
-const initialSource = `static
+const initialSource = `freeplay
 
 . . . . . . . . .
 . . . . . . . . .
@@ -16,9 +16,7 @@ const initialSource = `static
 . . + . O . + . .
 . . . . . . . . .
 . . . . . . . . .
-
-title: Example Board
-description: A simple 9x9 position`
+`
 
 // Set initial value
 textarea.value = initialSource

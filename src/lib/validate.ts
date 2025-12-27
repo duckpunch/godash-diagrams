@@ -45,7 +45,7 @@ export function validateBoardRows(lines: string[], startIndex: number): [number,
   return [startIndex, endIndex]
 }
 
-export function validateBoard(lines: string[]): ParsedBoard {
+export function validateBoard(lines: string[], allowEmpty: boolean = false): ParsedBoard {
   // Find where board definition starts (skip empty lines after type)
   let boardStartIndex = 1
   while (boardStartIndex < lines.length && lines[boardStartIndex].trim() === '') {
@@ -53,20 +53,31 @@ export function validateBoard(lines: string[]): ParsedBoard {
   }
 
   if (boardStartIndex >= lines.length) {
-    throw new ValidationError('No board definition found')
+    throw new ValidationError('No board definition or options found')
   }
 
-  // Validate board rows
-  let boardEndIndex: number
-  [boardStartIndex, boardEndIndex] = validateBoardRows(lines, boardStartIndex)
+  // Try to collect board rows (don't throw if empty - might be options-only)
+  const boardRows: string[] = []
+  let boardEndIndex = boardStartIndex
 
-  // Get board rows for parsing
-  const boardRows = lines.slice(boardStartIndex, boardEndIndex)
+  for (let i = boardStartIndex; i < lines.length; i++) {
+    const line = lines[i]
+    if (line.trim() === '') {
+      // Empty line ends board definition
+      boardEndIndex = i
+      break
+    }
 
-  // Get row and column counts
-  const rowCount = boardRows.length
-  const columnCount = boardRows[0].replace(/\s/g, '').length
-  const isSquare = rowCount === columnCount
+    // Check if this line looks like an option (has colon)
+    if (line.indexOf(':') > 0) {
+      // This is the start of options, board definition has ended
+      boardEndIndex = i
+      break
+    }
+
+    boardRows.push(line)
+    boardEndIndex = i + 1
+  }
 
   // Parse options (YAML-like syntax after board definition)
   const parsedOptions: Record<string, string> = {}
@@ -90,11 +101,44 @@ export function validateBoard(lines: string[]): ParsedBoard {
       throw new ValidationError('Size must be a positive integer greater than 1 and less than or equal to 19')
     }
     boardSize = sizeValue
+  }
 
-    // Validate row/column counts don't exceed size
-    if (rowCount > boardSize || columnCount > boardSize) {
-      throw new ValidationError(`Board dimensions (${rowCount}x${columnCount}) exceed specified size (${boardSize})`)
+  // Handle empty board case
+  if (boardRows.length === 0) {
+    if (!allowEmpty) {
+      throw new ValidationError('Board definition is required')
     }
+
+    if (!boardSize) {
+      throw new ValidationError('Empty board requires a "size" option')
+    }
+
+    // Create empty board with specified size
+    const board = Board(boardSize)
+    return {
+      board,
+      rowCount: boardSize,
+      columnCount: boardSize,
+      configStartIndex: boardEndIndex
+    }
+  }
+
+  // Validate all rows have same number of non-space characters (rectangle)
+  const columnCounts = boardRows.map(row => row.replace(/\s/g, '').length)
+  const firstColumnCount = columnCounts[0]
+
+  if (!columnCounts.every(count => count === firstColumnCount)) {
+    throw new ValidationError('All board rows must have the same number of non-space characters')
+  }
+
+  // Get row and column counts
+  const rowCount = boardRows.length
+  const columnCount = boardRows[0].replace(/\s/g, '').length
+  const isSquare = rowCount === columnCount
+
+  // Validate row/column counts don't exceed size if specified
+  if (boardSize && (rowCount > boardSize || columnCount > boardSize)) {
+    throw new ValidationError(`Board dimensions (${rowCount}x${columnCount}) exceed specified size (${boardSize})`)
   }
 
   // If rectangle (not square), size is required
