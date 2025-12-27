@@ -65,6 +65,61 @@ type HistoryEntry =
   | { type: 'move'; move: Move }
   | { type: 'pass'; color: Color }
 
+export class ProblemDiagram implements IDiagram {
+  private parsedBoard: ParsedBoard
+  private lines: string[]
+  private element: Element
+
+  constructor(element: Element, lines: string[]) {
+    this.element = element
+    this.lines = lines
+    // Don't allow empty boards, don't validate characters
+    const parsed = validateBoard(lines, false, false)
+
+    // Validate that marks are unique (only one coordinate per mark)
+    for (const [mark, coordinates] of Object.entries(parsed.otherMarks)) {
+      if (coordinates.length > 1) {
+        throw new Error(`Mark '${mark}' appears at multiple coordinates. Each mark must be unique.`)
+      }
+    }
+
+    this.parsedBoard = parsed
+  }
+
+  render(): void {
+    const element = this.element
+    const { board, rowCount, columnCount, configStartIndex } = this.parsedBoard
+
+    // Parse options for display (YAML-like syntax after board definition)
+    const parsedOptions: Record<string, string> = {}
+    for (let i = configStartIndex; i < this.lines.length; i++) {
+      const line = this.lines[i].trim()
+      if (line === '') continue
+
+      const colonIndex = line.indexOf(':')
+      if (colonIndex > 0) {
+        const key = line.substring(0, colonIndex).trim()
+        const value = line.substring(colonIndex + 1).trim()
+        parsedOptions[key] = value
+      }
+    }
+
+    // Generate SVG
+    const boardSvg = boardToSvg(board, rowCount, columnCount)
+
+    // Render
+    let output = boardSvg
+
+    // Display parsed options (for debugging)
+    if (Object.keys(parsedOptions).length > 0) {
+      output += `<div style="margin-top: 1rem;">Parsed Options:</div>`
+      output += `<pre style="background: #f4f4f4; padding: 1rem; border-radius: 4px; margin-top: 0.5rem; overflow-x: auto;">${JSON.stringify(parsedOptions, null, 2)}</pre>`
+    }
+
+    element.innerHTML = output
+  }
+}
+
 export class FreeplayDiagram implements IDiagram {
   private parsedBoard: ParsedBoard
   private lines: string[]
@@ -272,11 +327,12 @@ export class FreeplayDiagram implements IDiagram {
   }
 }
 
-export type Diagram = StaticDiagram | FreeplayDiagram
+export type Diagram = StaticDiagram | FreeplayDiagram | ProblemDiagram
 
 export const DIAGRAM_TYPES = {
   static: StaticDiagram,
   freeplay: FreeplayDiagram,
+  problem: ProblemDiagram,
 } as const
 
 export type DiagramType = keyof typeof DIAGRAM_TYPES

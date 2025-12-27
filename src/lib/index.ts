@@ -6,7 +6,7 @@
 import { toError } from './render'
 import { ValidationError } from './validate'
 import type { DiagramType, IDiagram } from './model'
-import { DIAGRAM_TYPES, StaticDiagram, FreeplayDiagram } from './model'
+import { DIAGRAM_TYPES, StaticDiagram, FreeplayDiagram, ProblemDiagram } from './model'
 
 const DEFAULT_DIAGRAM_CLASS = '.godash-diagram'
 
@@ -34,6 +34,9 @@ function renderDiagram(element: Element, source: string): void {
         break
       case 'freeplay':
         diagram = new FreeplayDiagram(element, lines)
+        break
+      case 'problem':
+        diagram = new ProblemDiagram(element, lines)
         break
       default:
         element.innerHTML = toError(`Unsupported diagram type "${diagramType}". Supported types: ${Object.keys(DIAGRAM_TYPES).join(', ')}`)

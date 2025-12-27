@@ -5,17 +5,15 @@ import { init, version } from './lib/index'
 console.log(`Godash Diagrams v${version}`)
 
 const textarea = document.querySelector<HTMLTextAreaElement>('#source-input')!
-const initialSource = `freeplay
+const initialSource = `problem
 
-. . . . . . . . .
-. . . . . . . . .
-. . + . . . + . .
-. . . O . . . . .
-. . . O X X . . .
-. . X X O . . . .
-. . + . O . + . .
-. . . . . . . . .
-. . . . . . . . .
+. O X . . X .
+. . . O O X .
+O O O X X X .
+X X X . . . .
+. . . . . . .
+
+size: 19
 `
 
 // Set initial value
