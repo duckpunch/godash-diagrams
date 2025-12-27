@@ -30,17 +30,17 @@ function renderDiagram(element: Element, source: string): void {
     let diagram: IDiagram
     switch (diagramType as DiagramType) {
       case 'static':
-        diagram = new StaticDiagram(lines)
+        diagram = new StaticDiagram(element, lines)
         break
       case 'freeplay':
-        diagram = new FreeplayDiagram(lines)
+        diagram = new FreeplayDiagram(element, lines)
         break
       default:
         element.innerHTML = toError(`Unsupported diagram type "${diagramType}". Supported types: ${Object.keys(DIAGRAM_TYPES).join(', ')}`)
         return
     }
 
-    diagram.render(element)
+    diagram.render()
   } catch (error) {
     if (error instanceof ValidationError) {
       element.innerHTML = toError(error.message)
