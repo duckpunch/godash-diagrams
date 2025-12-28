@@ -7,8 +7,8 @@ console.log(`Godash Diagrams v${version}`)
 const textarea = document.querySelector<HTMLTextAreaElement>('#source-input')!
 const initialSource = `problem
 
-A O X . . X .
-B . C O O X .
+A O X E F X .
+B C D O O X .
 O O O X X X .
 X X X . . . .
 . . . . . . .
@@ -16,9 +16,12 @@ X X X . . . .
 size: 19
 to-play: black
 
+paths:
+  F>D>E>B
+  C>B>A
+
 solutions:
-  A>B>C
-  C>B>C
+  A>B>D
 `
 
 // Set initial value
