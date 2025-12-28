@@ -245,6 +245,20 @@ export class ProblemDiagram implements IDiagram {
     }, tree1)
   }
 
+  private sequenceTreeToString(tree: SequenceTree, indent: number = 0): string {
+    if (tree.size === 0) return ''
+
+    const indentStr = '  '.repeat(indent)
+    let result = ''
+
+    tree.forEach((subtree, coord) => {
+      result += `${indentStr}[${coord.x},${coord.y}]\n`
+      result += this.sequenceTreeToString(subtree, indent + 1)
+    })
+
+    return result
+  }
+
   render(): void {
     const element = this.element
     const { board, rowCount, columnCount, configStartIndex } = this.parsedBoard
@@ -257,6 +271,12 @@ export class ProblemDiagram implements IDiagram {
 
     // Render
     let output = boardSvg
+
+    // Display sequence tree (for debugging)
+    if (this.sequenceTree.size > 0) {
+      output += `<div style="margin-top: 1rem;">Sequence Tree:</div>`
+      output += `<pre style="background: #f4f4f4; padding: 1rem; border-radius: 4px; margin-top: 0.5rem; overflow-x: auto;">${this.sequenceTreeToString(this.sequenceTree)}</pre>`
+    }
 
     // Display parsed options (for debugging)
     if (Object.keys(parsedOptions).length > 0) {
