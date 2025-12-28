@@ -1,7 +1,11 @@
 import type { Color } from 'godash'
 import { Board, Move, Coordinate, BLACK, WHITE, isLegalMove, addMove } from 'godash'
+import { Map as ImmutableMap } from 'immutable'
 import { validateBoard, parseOptions } from './validate'
 import { boardToSvg } from './render'
+
+// Recursive type for sequence tree where each level represents a move option
+export type SequenceTree = ImmutableMap<Coordinate, SequenceTree>
 
 export interface ParsedBoard {
   board: Board
@@ -59,6 +63,7 @@ export class ProblemDiagram implements IDiagram {
   private lines: string[]
   private element: Element
   public toPlay: Color
+  public sequenceTree: SequenceTree
 
   constructor(element: Element, lines: string[]) {
     this.element = element
@@ -175,10 +180,12 @@ export class ProblemDiagram implements IDiagram {
 
     // Parse and validate solutions
     const solutionsOption = parsedOptions.solutions
+    const allSequences: string[] = []
     if (solutionsOption) {
       const solutions = Array.isArray(solutionsOption) ? solutionsOption : [solutionsOption]
       for (const solution of solutions) {
         validateSequence(solution, 'Solution')
+        allSequences.push(solution)
       }
     }
 
@@ -188,8 +195,54 @@ export class ProblemDiagram implements IDiagram {
       const sequences = Array.isArray(sequencesOption) ? sequencesOption : [sequencesOption]
       for (const sequence of sequences) {
         validateSequence(sequence, 'Sequence')
+        allSequences.push(sequence)
       }
     }
+
+    // Build sequence tree from all sequences
+    this.sequenceTree = ImmutableMap<Coordinate, SequenceTree>()
+    for (const sequence of allSequences) {
+      const marks = sequence.split('>').map(m => m.trim()).filter(m => m.length > 0)
+
+      // Build tree path for this sequence
+      let currentTree = this.sequenceTree
+      for (const mark of marks) {
+        const coord = parsed.otherMarks[mark][0]
+
+        // Get or create subtree at this coordinate
+        const subtree = currentTree.get(coord) || ImmutableMap<Coordinate, SequenceTree>()
+        currentTree = currentTree.set(coord, subtree)
+        currentTree = subtree
+      }
+
+      // Update the root tree with the new path
+      // We need to rebuild from the root
+      let path: Coordinate[] = []
+      for (const mark of marks) {
+        path.push(parsed.otherMarks[mark][0])
+      }
+
+      // Build from the leaf up
+      let tree: SequenceTree = ImmutableMap<Coordinate, SequenceTree>()
+      for (let i = path.length - 1; i >= 0; i--) {
+        const coord = path[i]
+        tree = ImmutableMap<Coordinate, SequenceTree>().set(coord, tree)
+      }
+
+      // Merge with existing tree
+      this.sequenceTree = this.mergeSequenceTrees(this.sequenceTree, tree)
+    }
+  }
+
+  private mergeSequenceTrees(tree1: SequenceTree, tree2: SequenceTree): SequenceTree {
+    return tree2.reduce((merged, subtree2, coord) => {
+      const subtree1 = merged.get(coord)
+      if (subtree1) {
+        return merged.set(coord, this.mergeSequenceTrees(subtree1, subtree2))
+      } else {
+        return merged.set(coord, subtree2)
+      }
+    }, tree1)
   }
 
   render(): void {
