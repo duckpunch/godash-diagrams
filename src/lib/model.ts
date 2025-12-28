@@ -69,6 +69,7 @@ export class ProblemDiagram implements IDiagram {
   private parsedBoard: ParsedBoard
   private lines: string[]
   private element: Element
+  public toPlay: Color
 
   constructor(element: Element, lines: string[]) {
     this.element = element
@@ -83,7 +84,72 @@ export class ProblemDiagram implements IDiagram {
       }
     }
 
-    this.parsedBoard = parsed
+    // Parse options for black and white marks
+    const parsedOptions: Record<string, string> = {}
+    for (let i = parsed.configStartIndex; i < lines.length; i++) {
+      const line = lines[i].trim()
+      if (line === '') continue
+
+      const colonIndex = line.indexOf(':')
+      if (colonIndex > 0) {
+        const key = line.substring(0, colonIndex).trim()
+        const value = line.substring(colonIndex + 1).trim()
+        parsedOptions[key] = value
+      }
+    }
+
+    // Parse black and white marks into arrays
+    const blackMarks = parsedOptions.black
+      ? parsedOptions.black.split(',').map(m => m.trim()).filter(m => m.length > 0)
+      : []
+    const whiteMarks = parsedOptions.white
+      ? parsedOptions.white.split(',').map(m => m.trim()).filter(m => m.length > 0)
+      : []
+
+    // Validate that black and white marks are disjoint sets
+    const whiteSet = new Set(whiteMarks)
+    const intersection = blackMarks.filter(mark => whiteSet.has(mark))
+    if (intersection.length > 0) {
+      throw new Error(`Marks cannot appear in both black and white: ${intersection.join(', ')}`)
+    }
+
+    // Validate that all marks appear in otherMarks
+    const availableMarks = new Set(Object.keys(parsed.otherMarks))
+    for (const mark of blackMarks) {
+      if (!availableMarks.has(mark)) {
+        throw new Error(`Black mark '${mark}' does not appear in the board`)
+      }
+    }
+    for (const mark of whiteMarks) {
+      if (!availableMarks.has(mark)) {
+        throw new Error(`White mark '${mark}' does not appear in the board`)
+      }
+    }
+
+    // Parse to-play option (default to black)
+    const toPlayValue = parsedOptions['to-play']?.toLowerCase()
+    if (toPlayValue && toPlayValue !== 'black' && toPlayValue !== 'white') {
+      throw new Error(`Invalid to-play value '${toPlayValue}'. Must be 'black' or 'white'`)
+    }
+    this.toPlay = toPlayValue === 'white' ? WHITE : BLACK
+
+    // Add black and white marks as stones to the board
+    let board = parsed.board
+    for (const mark of blackMarks) {
+      const coordinates = parsed.otherMarks[mark]
+      for (const coord of coordinates) {
+        board = addMove(board, Move(coord, BLACK))
+      }
+    }
+    for (const mark of whiteMarks) {
+      const coordinates = parsed.otherMarks[mark]
+      for (const coord of coordinates) {
+        board = addMove(board, Move(coord, WHITE))
+      }
+    }
+
+    // Update parsed board with the new board state
+    this.parsedBoard = { ...parsed, board }
   }
 
   render(): void {

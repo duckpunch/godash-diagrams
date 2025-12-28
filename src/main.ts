@@ -10,12 +10,11 @@ const initialSource = `problem
 . O X . . X .
 . . . O O X .
 O O O X X X .
-X X X C A B .
+X X X . . . .
 . . . . . . .
 
 size: 19
-white: A
-black: B,C
+to-play: black
 `
 
 // Set initial value

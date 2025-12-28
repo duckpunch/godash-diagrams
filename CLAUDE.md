@@ -19,7 +19,7 @@ The `external/` directory contains checked-out repos for reference:
 These are for reference purposes during development.
 
 ## Development
-- `npm run dev` - Runs dev server with demo page
+- `npm run dev` - Runs dev server with demo page (expected to be run by user, not Claude)
 - `npm run build` - Builds library for distribution
 
 ## Library API
