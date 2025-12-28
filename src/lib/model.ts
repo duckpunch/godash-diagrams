@@ -134,6 +134,49 @@ export class ProblemDiagram implements IDiagram {
 
     // Update parsed board with the new board state
     this.parsedBoard = { ...parsed, board }
+
+    // Parse and validate solutions
+    const solutionsOption = parsedOptions.solutions
+    if (solutionsOption) {
+      const solutions = Array.isArray(solutionsOption) ? solutionsOption : [solutionsOption]
+
+      for (const solution of solutions) {
+        // Split solution on ">" to get marks
+        const marks = solution.split('>').map(m => m.trim()).filter(m => m.length > 0)
+
+        // Validate all marks exist in otherMarks
+        for (const mark of marks) {
+          if (!parsed.otherMarks[mark]) {
+            throw new Error(`Solution '${solution}': mark '${mark}' does not appear in the board`)
+          }
+        }
+
+        // Validate the move sequence by applying moves to the board
+        let testBoard = board
+        let currentColor = this.toPlay
+
+        for (let i = 0; i < marks.length; i++) {
+          const mark = marks[i]
+          const coordinates = parsed.otherMarks[mark]
+          const coord = coordinates[0] // We already validated marks are unique
+          const move = Move(coord, currentColor)
+
+          // Check if move is legal
+          if (!isLegalMove(testBoard, move)) {
+            throw new Error(`Solution '${solution}': move ${i + 1} (${mark}) is illegal`)
+          }
+
+          // Apply the move and toggle color
+          try {
+            testBoard = addMove(testBoard, move)
+          } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error)
+            throw new Error(`Solution '${solution}': move ${i + 1} (${mark}) failed - ${errorMessage}`)
+          }
+          currentColor = currentColor === BLACK ? WHITE : BLACK
+        }
+      }
+    }
   }
 
   render(): void {
