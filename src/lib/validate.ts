@@ -8,6 +8,34 @@ export class ValidationError extends Error {
   }
 }
 
+export function parseOptions(lines: string[], startIndex: number): Record<string, string | string[]> {
+  const parsedOptions: Record<string, string | string[]> = {}
+  let lastKey: string | null = null
+  let lastKeyHadEmptyValue = false
+
+  for (let i = startIndex; i < lines.length; i++) {
+    const line = lines[i].trim()
+    if (line === '') continue
+
+    const colonIndex = line.indexOf(':')
+    if (colonIndex > 0) {
+      const key = line.substring(0, colonIndex).trim()
+      const value = line.substring(colonIndex + 1).trim()
+      parsedOptions[key] = value
+      lastKey = key
+      lastKeyHadEmptyValue = value === ''
+    } else if (lastKey && lastKeyHadEmptyValue) {
+      // Line without colon and previous option started with empty value - add to array
+      if (Array.isArray(parsedOptions[lastKey])) {
+        (parsedOptions[lastKey] as string[]).push(line)
+      } else {
+        parsedOptions[lastKey] = [line]
+      }
+    }
+  }
+  return parsedOptions
+}
+
 export function validateBoardRows(lines: string[], startIndex: number): [number, number] {
   // Collect consecutive non-empty board rows
   const boardRows: string[] = []
@@ -80,23 +108,16 @@ export function validateBoard(lines: string[], options: ValidateBoardOptions = {
   }
 
   // Parse options (YAML-like syntax after board definition)
-  const parsedOptions: Record<string, string> = {}
-  for (let i = boardEndIndex; i < lines.length; i++) {
-    const line = lines[i].trim()
-    if (line === '') continue
-
-    const colonIndex = line.indexOf(':')
-    if (colonIndex > 0) {
-      const key = line.substring(0, colonIndex).trim()
-      const value = line.substring(colonIndex + 1).trim()
-      parsedOptions[key] = value
-    }
-  }
+  const parsedOptions = parseOptions(lines, boardEndIndex)
 
   // Validate size option if present
   let boardSize: number | undefined
   if (parsedOptions.size) {
-    const sizeValue = parseInt(parsedOptions.size, 10)
+    const sizeOption = parsedOptions.size
+    if (Array.isArray(sizeOption)) {
+      throw new ValidationError('Size option cannot have multiple values')
+    }
+    const sizeValue = parseInt(sizeOption, 10)
     if (isNaN(sizeValue) || sizeValue <= 1 || sizeValue > 19) {
       throw new ValidationError('Size must be a positive integer greater than 1 and less than or equal to 19')
     }

@@ -1,6 +1,6 @@
 import type { Color } from 'godash'
 import { Board, Move, Coordinate, BLACK, WHITE, isLegalMove, addMove } from 'godash'
-import { validateBoard } from './validate'
+import { validateBoard, parseOptions } from './validate'
 import { boardToSvg } from './render'
 
 export interface ParsedBoard {
@@ -32,18 +32,7 @@ export class StaticDiagram implements IDiagram {
     const { board, rowCount, columnCount, configStartIndex } = this.parsedBoard
 
     // Parse options for display (YAML-like syntax after board definition)
-    const parsedOptions: Record<string, string> = {}
-    for (let i = configStartIndex; i < this.lines.length; i++) {
-      const line = this.lines[i].trim()
-      if (line === '') continue
-
-      const colonIndex = line.indexOf(':')
-      if (colonIndex > 0) {
-        const key = line.substring(0, colonIndex).trim()
-        const value = line.substring(colonIndex + 1).trim()
-        parsedOptions[key] = value
-      }
-    }
+    const parsedOptions = parseOptions(this.lines, configStartIndex)
 
     // Generate SVG
     const boardSvg = boardToSvg(board, rowCount, columnCount)
@@ -85,25 +74,17 @@ export class ProblemDiagram implements IDiagram {
     }
 
     // Parse options for black and white marks
-    const parsedOptions: Record<string, string> = {}
-    for (let i = parsed.configStartIndex; i < lines.length; i++) {
-      const line = lines[i].trim()
-      if (line === '') continue
-
-      const colonIndex = line.indexOf(':')
-      if (colonIndex > 0) {
-        const key = line.substring(0, colonIndex).trim()
-        const value = line.substring(colonIndex + 1).trim()
-        parsedOptions[key] = value
-      }
-    }
+    const parsedOptions = parseOptions(lines, parsed.configStartIndex)
 
     // Parse black and white marks into arrays
-    const blackMarks = parsedOptions.black
-      ? parsedOptions.black.split(',').map(m => m.trim()).filter(m => m.length > 0)
+    const blackOption = parsedOptions.black
+    const whiteOption = parsedOptions.white
+
+    const blackMarks = blackOption
+      ? (Array.isArray(blackOption) ? blackOption : blackOption.split(',').map(m => m.trim()).filter(m => m.length > 0))
       : []
-    const whiteMarks = parsedOptions.white
-      ? parsedOptions.white.split(',').map(m => m.trim()).filter(m => m.length > 0)
+    const whiteMarks = whiteOption
+      ? (Array.isArray(whiteOption) ? whiteOption : whiteOption.split(',').map(m => m.trim()).filter(m => m.length > 0))
       : []
 
     // Validate that black and white marks are disjoint sets
@@ -127,7 +108,10 @@ export class ProblemDiagram implements IDiagram {
     }
 
     // Parse to-play option (default to black)
-    const toPlayValue = parsedOptions['to-play']?.toLowerCase()
+    const toPlayOption = parsedOptions['to-play']
+    const toPlayValue = toPlayOption
+      ? (Array.isArray(toPlayOption) ? toPlayOption[0] : toPlayOption).toLowerCase()
+      : ''
     if (toPlayValue && toPlayValue !== 'black' && toPlayValue !== 'white') {
       throw new Error(`Invalid to-play value '${toPlayValue}'. Must be 'black' or 'white'`)
     }
@@ -157,18 +141,7 @@ export class ProblemDiagram implements IDiagram {
     const { board, rowCount, columnCount, configStartIndex } = this.parsedBoard
 
     // Parse options for display (YAML-like syntax after board definition)
-    const parsedOptions: Record<string, string> = {}
-    for (let i = configStartIndex; i < this.lines.length; i++) {
-      const line = this.lines[i].trim()
-      if (line === '') continue
-
-      const colonIndex = line.indexOf(':')
-      if (colonIndex > 0) {
-        const key = line.substring(0, colonIndex).trim()
-        const value = line.substring(colonIndex + 1).trim()
-        parsedOptions[key] = value
-      }
-    }
+    const parsedOptions = parseOptions(this.lines, configStartIndex)
 
     // Generate SVG
     const boardSvg = boardToSvg(board, rowCount, columnCount)
@@ -277,18 +250,7 @@ export class FreeplayDiagram implements IDiagram {
     const { rowCount, columnCount, configStartIndex } = this.parsedBoard
 
     // Parse options for display (YAML-like syntax after board definition)
-    const parsedOptions: Record<string, string> = {}
-    for (let i = configStartIndex; i < this.lines.length; i++) {
-      const line = this.lines[i].trim()
-      if (line === '') continue
-
-      const colonIndex = line.indexOf(':')
-      if (colonIndex > 0) {
-        const key = line.substring(0, colonIndex).trim()
-        const value = line.substring(colonIndex + 1).trim()
-        parsedOptions[key] = value
-      }
-    }
+    const parsedOptions = parseOptions(this.lines, configStartIndex)
 
     // Generate SVG using current board state
     const boardSvg = boardToSvg(this.currentBoard, rowCount, columnCount)
