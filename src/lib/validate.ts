@@ -39,7 +39,13 @@ export function validateBoardRows(lines: string[], startIndex: number): [number,
   return [startIndex, endIndex]
 }
 
-export function validateBoard(lines: string[], allowEmpty: boolean = false, validateCharacters: boolean = true): ParsedBoard {
+export interface ValidateBoardOptions {
+  allowEmpty?: boolean
+  validateCharacters?: boolean
+}
+
+export function validateBoard(lines: string[], options: ValidateBoardOptions = {}): ParsedBoard {
+  const { allowEmpty = false, validateCharacters = true } = options
   // Find where board definition starts (skip empty lines after type)
   let boardStartIndex = 1
   while (boardStartIndex < lines.length && lines[boardStartIndex].trim() === '') {

@@ -23,7 +23,7 @@ export class StaticDiagram implements IDiagram {
   constructor(element: Element, lines: string[]) {
     this.element = element
     this.lines = lines
-    this.parsedBoard = validateBoard(lines)
+    this.parsedBoard = validateBoard(lines, {})
   }
 
   render(): void {
@@ -74,7 +74,7 @@ export class ProblemDiagram implements IDiagram {
     this.element = element
     this.lines = lines
     // Don't allow empty boards, don't validate characters
-    const parsed = validateBoard(lines, false, false)
+    const parsed = validateBoard(lines, { allowEmpty: false, validateCharacters: false })
 
     // Validate that marks are unique (only one coordinate per mark)
     for (const [mark, coordinates] of Object.entries(parsed.otherMarks)) {
@@ -133,7 +133,7 @@ export class FreeplayDiagram implements IDiagram {
   constructor(element: Element, lines: string[]) {
     this.element = element
     this.lines = lines
-    this.parsedBoard = validateBoard(lines, true)
+    this.parsedBoard = validateBoard(lines, { allowEmpty: true })
     this.initialBoard = this.parsedBoard.board
     this.currentBoard = this.parsedBoard.board
     this.history = []
