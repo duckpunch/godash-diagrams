@@ -312,6 +312,9 @@ export class ProblemDiagram implements IDiagram {
       output += `<pre style="background: #f4f4f4; padding: 1rem; border-radius: 4px; margin-top: 0.5rem; overflow-x: auto;">${this.sequenceTreeToString(this.sequenceTree)}</pre>`
     }
 
+    // Display current result (for debugging)
+    output += `<div style="margin-top: 1rem;">Current Result: <strong>${this.result}</strong></div>`
+
     // Display parsed options (for debugging)
     if (Object.keys(parsedOptions).length > 0) {
       output += `<div style="margin-top: 1rem;">Parsed Options:</div>`
