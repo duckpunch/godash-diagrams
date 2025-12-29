@@ -346,6 +346,15 @@ export class ProblemDiagram implements IDiagram {
     this.render()
   }
 
+  private reset(): void {
+    this.currentTree = this.sequenceTree
+    this.playedMoves = []
+    this.currentBoard = this.parsedBoard.board
+    this.isBlackTurn = this.toPlay === BLACK
+    this.result = ProblemResult.Incomplete
+    this.render()
+  }
+
   private sequenceTreeToString(tree: SequenceTree, indent: number = 0): string {
     if (tree.size === 0) return ''
 
@@ -372,6 +381,13 @@ export class ProblemDiagram implements IDiagram {
 
     // Render
     let output = boardSvg
+
+    // Add reset button
+    const resetButtonId = `reset-${Math.random().toString(36).substr(2, 9)}`
+    const buttonStyle = 'padding: 0.5rem 1rem; margin: 0.5rem 0.25rem; border: 1px solid #ccc; border-radius: 4px; background: #fff; cursor: pointer; font-size: 0.9rem;'
+    output += `<div style="margin-top: 1rem;">`
+    output += `<button id="${resetButtonId}" style="${buttonStyle}">Reset</button>`
+    output += `</div>`
 
     // Display sequence tree (for debugging)
     if (this.sequenceTree.size > 0) {
@@ -413,6 +429,12 @@ export class ProblemDiagram implements IDiagram {
           this.handleUserMove(coordinate)
         }
       })
+    }
+
+    // Add reset button event listener
+    const resetButton = document.getElementById(resetButtonId)
+    if (resetButton) {
+      resetButton.addEventListener('click', () => this.reset())
     }
   }
 }
