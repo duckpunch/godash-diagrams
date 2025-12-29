@@ -6,7 +6,7 @@
     "name": "duckpunch",
     "url": "https://github.com/duckpunch"
   },
-  "license": "MIT",
+  "license": "ISC",
   "repository": {
     "type": "git",
     "url": "https://github.com/duckpunch/godash-diagrams.git"
