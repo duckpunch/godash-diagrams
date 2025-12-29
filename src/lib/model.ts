@@ -7,6 +7,14 @@ import { boardToSvg } from './render'
 // Recursive type for sequence tree where each level represents a move option
 export type SequenceTree = ImmutableMap<Coordinate, SequenceTree>
 
+export const ProblemResult = {
+  Success: 'success',
+  Failure: 'failure',
+  Incomplete: 'incomplete'
+} as const
+
+export type ProblemResult = typeof ProblemResult[keyof typeof ProblemResult]
+
 export interface ParsedBoard {
   board: Board
   rowCount: number
@@ -64,6 +72,7 @@ export class ProblemDiagram implements IDiagram {
   private element: Element
   public toPlay: Color
   public sequenceTree: SequenceTree
+  public result: ProblemResult
 
   constructor(element: Element, lines: string[]) {
     this.element = element
@@ -139,6 +148,9 @@ export class ProblemDiagram implements IDiagram {
 
     // Update parsed board with the new board state
     this.parsedBoard = { ...parsed, board }
+
+    // Initialize result to incomplete
+    this.result = ProblemResult.Incomplete
 
     // Helper function to validate a move sequence
     const validateSequence = (sequence: string, label: string) => {
