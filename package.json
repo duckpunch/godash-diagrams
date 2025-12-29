@@ -9,7 +9,7 @@
   "license": "ISC",
   "repository": {
     "type": "git",
-    "url": "https://github.com/duckpunch/godash-diagrams.git"
+    "url": "git+https://github.com/duckpunch/godash-diagrams.git"
   },
   "homepage": "https://duckpunch.github.io/godash-diagrams/",
   "keywords": ["go", "baduk", "weiqi", "diagram", "mermaid", "godash"],
