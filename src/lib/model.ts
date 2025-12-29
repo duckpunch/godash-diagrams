@@ -296,21 +296,24 @@ export class ProblemDiagram implements IDiagram {
     // Check if this move is in the current tree
     const node = this.currentTree.get(coord)
 
-    if (!node) {
-      // Move not in tree - instant failure
-      this.result = ProblemResult.Failure
-      this.render()
-      return
-    }
-
-    // Valid move - play it
+    // Play the move regardless of whether it's in the tree
     const currentColor = this.isBlackTurn ? BLACK : WHITE
     const move = Move(coord, currentColor)
     this.playedMoves.push(move)
     this.currentBoard = addMove(this.currentBoard, move)
     this.isBlackTurn = !this.isBlackTurn
 
-    // Update current tree and result
+    if (!node) {
+      // Move not in tree - only set to failure if not already in success state
+      if (this.result !== ProblemResult.Success) {
+        this.result = ProblemResult.Failure
+      }
+      this.currentTree = ImmutableMap<Coordinate, SequenceNode>() // Clear tree so no further responses
+      this.render()
+      return
+    }
+
+    // Valid move - update tree and result
     this.currentTree = node.children
     this.result = node.result
 
