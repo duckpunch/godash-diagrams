@@ -1,4 +1,4 @@
-import { Board, Move, Coordinate, BLACK, WHITE, EMPTY } from 'godash'
+import { Board, Move, Coordinate, BLACK, WHITE, EMPTY, placeStone } from 'godash'
 import type { ParsedBoard } from './model'
 
 export class ValidationError extends Error {
@@ -70,10 +70,11 @@ export function validateBoardRows(lines: string[], startIndex: number): [number,
 export interface ValidateBoardOptions {
   allowEmpty?: boolean
   validateCharacters?: boolean
+  ignoreRules?: boolean
 }
 
 export function validateBoard(lines: string[], options: ValidateBoardOptions = {}): ParsedBoard {
-  const { allowEmpty = false, validateCharacters = true } = options
+  const { allowEmpty = false, validateCharacters = true, ignoreRules = false } = options
   // Find where board definition starts (skip empty lines after type)
   let boardStartIndex = 1
   while (boardStartIndex < lines.length && lines[boardStartIndex].trim() === '') {
@@ -216,7 +217,17 @@ export function validateBoard(lines: string[], options: ValidateBoardOptions = {
   }
 
   // Create godash board
-  const board = Board(boardSize, ...moves)
+  let board: Board
+  if (ignoreRules) {
+    // Use placeStone to ignore Go rules
+    board = Board(boardSize)
+    for (const move of moves) {
+      board = placeStone(board, move.coordinate, move.color)
+    }
+  } else {
+    // Use normal Board constructor which respects rules
+    board = Board(boardSize, ...moves)
+  }
 
   return {
     board,

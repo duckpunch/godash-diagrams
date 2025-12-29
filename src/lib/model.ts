@@ -39,7 +39,31 @@ export class StaticDiagram implements IDiagram {
 
   constructor(element: Element, lines: string[]) {
     this.element = element
-    this.parsedBoard = validateBoard(lines, {})
+
+    // Do a preliminary parse to extract options
+    // We need to find where the board ends to parse options
+    let boardStartIndex = 1
+    while (boardStartIndex < lines.length && lines[boardStartIndex].trim() === '') {
+      boardStartIndex++
+    }
+
+    let configStartIndex = boardStartIndex
+    for (let i = boardStartIndex; i < lines.length; i++) {
+      const line = lines[i]
+      if (line.trim() === '' || line.indexOf(':') > 0) {
+        configStartIndex = i
+        break
+      }
+    }
+
+    // Parse options
+    const parsedOptions = parseOptions(lines, configStartIndex)
+
+    // Extract ignore-rules option (defaults to false)
+    const ignoreRulesOption = parsedOptions['ignore-rules']
+    const ignoreRules = ignoreRulesOption === 'true' || ignoreRulesOption === '1'
+
+    this.parsedBoard = validateBoard(lines, { ignoreRules })
   }
 
   render(): void {

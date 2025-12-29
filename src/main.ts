@@ -19,6 +19,15 @@ const EXAMPLES = {
 . . . . . . . . .
 `,
 
+  'ignore-rules': `static
+
+. O . .
+O X O .
+. O . .
+. . . .
+
+ignore-rules: true`,
+
   freeplay: `freeplay
 
 size: 9`,
