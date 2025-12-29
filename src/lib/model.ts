@@ -79,6 +79,10 @@ export class ProblemDiagram implements IDiagram {
   public toPlay: Color
   public sequenceTree: SequenceTree
   public result: ProblemResult
+  private currentTree: SequenceTree
+  private playedMoves: Move[]
+  private currentBoard: Board
+  private isBlackTurn: boolean
 
   constructor(element: Element, lines: string[]) {
     this.element = element
@@ -157,6 +161,12 @@ export class ProblemDiagram implements IDiagram {
 
     // Initialize result to incomplete
     this.result = ProblemResult.Incomplete
+
+    // Initialize play state
+    this.currentTree = ImmutableMap<Coordinate, SequenceNode>()
+    this.playedMoves = []
+    this.currentBoard = board
+    this.isBlackTurn = this.toPlay === BLACK
 
     // Helper function to validate a move sequence
     const validateSequence = (sequence: string, label: string) => {
@@ -254,6 +264,9 @@ export class ProblemDiagram implements IDiagram {
       // Merge with existing tree
       this.sequenceTree = this.mergeSequenceTrees(this.sequenceTree, tree)
     }
+
+    // Set current tree to the root of sequence tree
+    this.currentTree = this.sequenceTree
   }
 
   private mergeSequenceTrees(tree1: SequenceTree, tree2: SequenceTree): SequenceTree {
@@ -279,6 +292,60 @@ export class ProblemDiagram implements IDiagram {
     }, tree1)
   }
 
+  private handleUserMove(coord: Coordinate): void {
+    // Check if this move is in the current tree
+    const node = this.currentTree.get(coord)
+
+    if (!node) {
+      // Move not in tree - instant failure
+      this.result = ProblemResult.Failure
+      this.render()
+      return
+    }
+
+    // Valid move - play it
+    const currentColor = this.isBlackTurn ? BLACK : WHITE
+    const move = Move(coord, currentColor)
+    this.playedMoves.push(move)
+    this.currentBoard = addMove(this.currentBoard, move)
+    this.isBlackTurn = !this.isBlackTurn
+
+    // Update current tree and result
+    this.currentTree = node.children
+    this.result = node.result
+
+    // Re-render
+    this.render()
+
+    // If there are children (computer has responses), play a random one after delay
+    if (node.children.size > 0) {
+      setTimeout(() => this.playComputerResponse(), 500)
+    }
+  }
+
+  private playComputerResponse(): void {
+    // Pick a random child from current tree
+    const children = Array.from(this.currentTree.entries())
+    if (children.length === 0) return
+
+    const randomIndex = Math.floor(Math.random() * children.length)
+    const [coord, node] = children[randomIndex]
+
+    // Play the move
+    const currentColor = this.isBlackTurn ? BLACK : WHITE
+    const move = Move(coord, currentColor)
+    this.playedMoves.push(move)
+    this.currentBoard = addMove(this.currentBoard, move)
+    this.isBlackTurn = !this.isBlackTurn
+
+    // Update current tree and result
+    this.currentTree = node.children
+    this.result = node.result
+
+    // Re-render
+    this.render()
+  }
+
   private sequenceTreeToString(tree: SequenceTree, indent: number = 0): string {
     if (tree.size === 0) return ''
 
@@ -295,13 +362,13 @@ export class ProblemDiagram implements IDiagram {
 
   render(): void {
     const element = this.element
-    const { board, rowCount, columnCount, configStartIndex } = this.parsedBoard
+    const { rowCount, columnCount, configStartIndex } = this.parsedBoard
 
     // Parse options for display (YAML-like syntax after board definition)
     const parsedOptions = parseOptions(this.lines, configStartIndex)
 
-    // Generate SVG
-    const boardSvg = boardToSvg(board, rowCount, columnCount)
+    // Generate SVG using current board state
+    const boardSvg = boardToSvg(this.currentBoard, rowCount, columnCount)
 
     // Render
     let output = boardSvg
@@ -322,6 +389,31 @@ export class ProblemDiagram implements IDiagram {
     }
 
     element.innerHTML = output
+
+    // Add click handler to SVG
+    const svg = element.querySelector('svg')
+    if (svg) {
+      svg.style.cursor = 'pointer'
+
+      svg.addEventListener('click', (event: Event) => {
+        const mouseEvent = event as MouseEvent
+        const rect = svg.getBoundingClientRect()
+        const x = mouseEvent.clientX - rect.left
+        const y = mouseEvent.clientY - rect.top
+
+        // Convert to board coordinates
+        const cellSize = 30
+        const margin = cellSize
+        const col = Math.round((x - margin) / cellSize)
+        const row = Math.round((y - margin) / cellSize)
+
+        // Validate coordinates are within board bounds
+        if (row >= 0 && row < rowCount && col >= 0 && col < columnCount) {
+          const coordinate = Coordinate(row, col)
+          this.handleUserMove(coordinate)
+        }
+      })
+    }
   }
 }
 
