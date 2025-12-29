@@ -1,7 +1,18 @@
 {
   "name": "godash-diagrams",
-  "private": true,
-  "version": "0.0.0",
+  "version": "0.0.1",
+  "description": "A diagramming library for Go, inspired by Mermaid, and built on Godash",
+  "author": {
+    "name": "duckpunch",
+    "url": "https://github.com/duckpunch"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/duckpunch/godash-diagrams.git"
+  },
+  "homepage": "https://duckpunch.github.io/godash-diagrams/",
+  "keywords": ["go", "baduk", "weiqi", "diagram", "mermaid", "godash"],
   "type": "module",
   "main": "./dist/godash-diagrams.umd.cjs",
   "module": "./dist/godash-diagrams.js",
