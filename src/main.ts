@@ -8,21 +8,18 @@ console.log(`Godash Diagrams v${version}`)
 const EXAMPLES = {
   static: `static
 
-. . . X X X .
-. . . O O X .
-O O O X X X .
-X X X . . . .
-. . . . . . .
-
-size: 19`,
+. . . . . . . . .
+. . . . . . . . .
+. . + . . . + . .
+. . . O . . . . .
+. . . O X X . . .
+. . X X O . . . .
+. . + . O . + . .
+. . . . . . . . .
+. . . . . . . . .
+`,
 
   freeplay: `freeplay
-
-. . . . . . .
-. . . . . . .
-. . . . . . .
-. . . . . . .
-. . . . . . .
 
 size: 9`,
 
@@ -40,6 +37,8 @@ to-play: black
 sequences:
   f>d>e>b
   c>b>a
+  a>b>f>d
+  d>c
 
 solutions:
   a>b>d`

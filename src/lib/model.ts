@@ -35,36 +35,23 @@ export interface IDiagram {
 
 export class StaticDiagram implements IDiagram {
   private parsedBoard: ParsedBoard
-  private lines: string[]
   private element: Element
 
   constructor(element: Element, lines: string[]) {
     this.element = element
-    this.lines = lines
     this.parsedBoard = validateBoard(lines, {})
   }
 
   render(): void {
     const element = this.element
 
-    const { board, rowCount, columnCount, configStartIndex } = this.parsedBoard
-
-    // Parse options for display (YAML-like syntax after board definition)
-    const parsedOptions = parseOptions(this.lines, configStartIndex)
+    const { board, rowCount, columnCount } = this.parsedBoard
 
     // Generate SVG
     const boardSvg = boardToSvg(board, rowCount, columnCount)
 
     // Render
-    let output = boardSvg
-
-    // Display parsed options (for debugging)
-    if (Object.keys(parsedOptions).length > 0) {
-      output += `<div style="margin-top: 1rem;">Parsed Options:</div>`
-      output += `<pre style="background: #f4f4f4; padding: 1rem; border-radius: 4px; margin-top: 0.5rem; overflow-x: auto;">${JSON.stringify(parsedOptions, null, 2)}</pre>`
-    }
-
-    element.innerHTML = output
+    element.innerHTML = boardSvg
   }
 }
 
@@ -366,11 +353,19 @@ export class ProblemDiagram implements IDiagram {
     // Render
     let output = boardSvg
 
-    // Add reset button
+    // Add reset button and result label
     const resetButtonId = `reset-${Math.random().toString(36).substr(2, 9)}`
     const buttonStyle = 'padding: 0.5rem 1rem; margin: 0.5rem 0.25rem; border: 1px solid #ccc; border-radius: 4px; background: #fff; cursor: pointer; font-size: 0.9rem;'
-    output += `<div style="margin-top: 1rem;">`
+    output += `<div style="margin-top: 1rem; display: flex; align-items: center;">`
     output += `<button id="${resetButtonId}" style="${buttonStyle}">Reset</button>`
+
+    // Add result label next to button
+    if (this.result === ProblemResult.Success) {
+      output += `<span style="margin-left: 1rem; font-weight: 600; font-size: 1.1rem; color: #155724;">Success!</span>`
+    } else if (this.result === ProblemResult.Failure) {
+      output += `<span style="margin-left: 1rem; font-weight: 600; font-size: 1.1rem; color: #721c24;">Incorrect</span>`
+    }
+
     output += `</div>`
 
     element.innerHTML = output
@@ -410,7 +405,6 @@ export class ProblemDiagram implements IDiagram {
 
 export class FreeplayDiagram implements IDiagram {
   private parsedBoard: ParsedBoard
-  private lines: string[]
   private element: Element
   private currentBoard: Board
   private initialBoard: Board
@@ -420,7 +414,6 @@ export class FreeplayDiagram implements IDiagram {
 
   constructor(element: Element, lines: string[]) {
     this.element = element
-    this.lines = lines
     this.parsedBoard = validateBoard(lines, { allowEmpty: true })
     this.initialBoard = this.parsedBoard.board
     this.currentBoard = this.parsedBoard.board
@@ -496,10 +489,7 @@ export class FreeplayDiagram implements IDiagram {
   render(): void {
     const element = this.element
 
-    const { rowCount, columnCount, configStartIndex } = this.parsedBoard
-
-    // Parse options for display (YAML-like syntax after board definition)
-    const parsedOptions = parseOptions(this.lines, configStartIndex)
+    const { rowCount, columnCount } = this.parsedBoard
 
     // Generate SVG using current board state
     const boardSvg = boardToSvg(this.currentBoard, rowCount, columnCount)
@@ -527,12 +517,6 @@ export class FreeplayDiagram implements IDiagram {
     output += `</div>`
 
     output += `</div>`
-
-    // Display parsed options (for debugging)
-    if (Object.keys(parsedOptions).length > 0) {
-      output += `<div style="margin-top: 1rem;">Parsed Options:</div>`
-      output += `<pre style="background: #f4f4f4; padding: 1rem; border-radius: 4px; margin-top: 0.5rem; overflow-x: auto;">${JSON.stringify(parsedOptions, null, 2)}</pre>`
-    }
 
     element.innerHTML = output
 
