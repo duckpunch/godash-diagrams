@@ -4,8 +4,29 @@ import { init, version } from './lib/index'
 
 console.log(`Godash Diagrams v${version}`)
 
-const textarea = document.querySelector<HTMLTextAreaElement>('#source-input')!
-const initialSource = `problem
+// Example sources for each diagram type - easy to tweak!
+const EXAMPLES = {
+  static: `static
+
+. . . X X X .
+. . . O O X .
+O O O X X X .
+X X X . . . .
+. . . . . . .
+
+size: 19`,
+
+  freeplay: `freeplay
+
+. . . . . . .
+. . . . . . .
+. . . . . . .
+. . . . . . .
+. . . . . . .
+
+size: 9`,
+
+  problem: `problem
 
 a O X e f X .
 b c d O O X .
@@ -21,15 +42,47 @@ sequences:
   c>b>a
 
 solutions:
-  a>b>d
-`
+  a>b>d`
+}
 
-// Set initial value
-textarea.value = initialSource
+const textarea = document.querySelector<HTMLTextAreaElement>('#source-input')!
+
+// Create example buttons
+const buttonContainer = document.createElement('div')
+buttonContainer.className = 'form-row'
+
+// Add label
+const label = document.createElement('span')
+label.textContent = 'Load sample: '
+label.style.marginRight = '0.5rem'
+buttonContainer.appendChild(label)
+
+Object.keys(EXAMPLES).forEach(exampleType => {
+  const button = document.createElement('button')
+  button.textContent = exampleType.charAt(0).toUpperCase() + exampleType.slice(1)
+  button.style.marginRight = '0.5rem'
+  button.style.padding = '0.5rem 1rem'
+  button.style.cursor = 'pointer'
+
+  button.addEventListener('click', () => {
+    textarea.value = EXAMPLES[exampleType as keyof typeof EXAMPLES]
+    init('#app', {
+      diagramSource: textarea.value
+    })
+  })
+
+  buttonContainer.appendChild(button)
+})
+
+// Insert buttons after the textarea
+textarea.parentElement!.insertBefore(buttonContainer, textarea.nextSibling)
+
+// Set initial value to problem example
+textarea.value = EXAMPLES.problem
 
 // Initialize diagram with initial source
 init('#app', {
-  diagramSource: initialSource
+  diagramSource: textarea.value
 })
 
 // Update diagram on input
