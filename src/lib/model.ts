@@ -74,7 +74,6 @@ type HistoryEntry =
 
 export class ProblemDiagram implements IDiagram {
   private parsedBoard: ParsedBoard
-  private lines: string[]
   private element: Element
   public toPlay: Color
   public sequenceTree: SequenceTree
@@ -86,7 +85,6 @@ export class ProblemDiagram implements IDiagram {
 
   constructor(element: Element, lines: string[]) {
     this.element = element
-    this.lines = lines
     // Don't allow empty boards, don't validate characters
     const parsed = validateBoard(lines, { allowEmpty: false, validateCharacters: false })
 
@@ -358,26 +356,9 @@ export class ProblemDiagram implements IDiagram {
     this.render()
   }
 
-  private sequenceTreeToString(tree: SequenceTree, indent: number = 0): string {
-    if (tree.size === 0) return ''
-
-    const indentStr = '  '.repeat(indent)
-    let result = ''
-
-    tree.forEach((node, coord) => {
-      result += `${indentStr}[${coord.x},${coord.y}] ${node.result}\n`
-      result += this.sequenceTreeToString(node.children, indent + 1)
-    })
-
-    return result
-  }
-
   render(): void {
     const element = this.element
-    const { rowCount, columnCount, configStartIndex } = this.parsedBoard
-
-    // Parse options for display (YAML-like syntax after board definition)
-    const parsedOptions = parseOptions(this.lines, configStartIndex)
+    const { rowCount, columnCount } = this.parsedBoard
 
     // Generate SVG using current board state
     const boardSvg = boardToSvg(this.currentBoard, rowCount, columnCount)
@@ -391,21 +372,6 @@ export class ProblemDiagram implements IDiagram {
     output += `<div style="margin-top: 1rem;">`
     output += `<button id="${resetButtonId}" style="${buttonStyle}">Reset</button>`
     output += `</div>`
-
-    // Display sequence tree (for debugging)
-    if (this.sequenceTree.size > 0) {
-      output += `<div style="margin-top: 1rem;">Sequence Tree:</div>`
-      output += `<pre style="background: #f4f4f4; padding: 1rem; border-radius: 4px; margin-top: 0.5rem; overflow-x: auto;">${this.sequenceTreeToString(this.sequenceTree)}</pre>`
-    }
-
-    // Display current result (for debugging)
-    output += `<div style="margin-top: 1rem;">Current Result: <strong>${this.result}</strong></div>`
-
-    // Display parsed options (for debugging)
-    if (Object.keys(parsedOptions).length > 0) {
-      output += `<div style="margin-top: 1rem;">Parsed Options:</div>`
-      output += `<pre style="background: #f4f4f4; padding: 1rem; border-radius: 4px; margin-top: 0.5rem; overflow-x: auto;">${JSON.stringify(parsedOptions, null, 2)}</pre>`
-    }
 
     element.innerHTML = output
 
