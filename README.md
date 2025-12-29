@@ -49,6 +49,18 @@ O .
 </script>
 ```
 
+### Auto-init (no JavaScript required)
+
+```html
+<script src="https://unpkg.com/godash-diagrams/dist/godash-diagrams.auto.iife.js"></script>
+<div class="godash-diagram">
+static
+
+O .
+. X
+</div>
+```
+
 ## License
 
 ISC
