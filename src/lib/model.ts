@@ -4,9 +4,6 @@ import { Map as ImmutableMap } from 'immutable'
 import { validateBoard, parseOptions } from './validate'
 import { boardToSvg } from './render'
 
-// Recursive type for sequence tree where each level represents a move option
-export type SequenceTree = ImmutableMap<Coordinate, SequenceTree>
-
 export const ProblemResult = {
   Success: 'success',
   Failure: 'failure',
@@ -14,6 +11,15 @@ export const ProblemResult = {
 } as const
 
 export type ProblemResult = typeof ProblemResult[keyof typeof ProblemResult]
+
+// Sequence tree node with result and children
+export interface SequenceNode {
+  result: ProblemResult
+  children: SequenceTree
+}
+
+// Recursive type for sequence tree where each level represents a move option
+export type SequenceTree = ImmutableMap<Coordinate, SequenceNode>
 
 export interface ParsedBoard {
   board: Board
@@ -192,12 +198,12 @@ export class ProblemDiagram implements IDiagram {
 
     // Parse and validate solutions
     const solutionsOption = parsedOptions.solutions
-    const allSequences: string[] = []
+    const allSequences: Array<{ sequence: string, isSolution: boolean }> = []
     if (solutionsOption) {
       const solutions = Array.isArray(solutionsOption) ? solutionsOption : [solutionsOption]
       for (const solution of solutions) {
         validateSequence(solution, 'Solution')
-        allSequences.push(solution)
+        allSequences.push({ sequence: solution, isSolution: true })
       }
     }
 
@@ -207,38 +213,42 @@ export class ProblemDiagram implements IDiagram {
       const sequences = Array.isArray(sequencesOption) ? sequencesOption : [sequencesOption]
       for (const sequence of sequences) {
         validateSequence(sequence, 'Sequence')
-        allSequences.push(sequence)
+        allSequences.push({ sequence: sequence, isSolution: false })
       }
     }
 
     // Build sequence tree from all sequences
-    this.sequenceTree = ImmutableMap<Coordinate, SequenceTree>()
-    for (const sequence of allSequences) {
+    this.sequenceTree = ImmutableMap<Coordinate, SequenceNode>()
+    for (const { sequence, isSolution } of allSequences) {
       const marks = sequence.split('>').map(m => m.trim()).filter(m => m.length > 0)
 
-      // Build tree path for this sequence
-      let currentTree = this.sequenceTree
-      for (const mark of marks) {
-        const coord = parsed.otherMarks[mark][0]
-
-        // Get or create subtree at this coordinate
-        const subtree = currentTree.get(coord) || ImmutableMap<Coordinate, SequenceTree>()
-        currentTree = currentTree.set(coord, subtree)
-        currentTree = subtree
-      }
-
-      // Update the root tree with the new path
-      // We need to rebuild from the root
-      let path: Coordinate[] = []
+      // Build path of coordinates
+      const path: Coordinate[] = []
       for (const mark of marks) {
         path.push(parsed.otherMarks[mark][0])
       }
 
       // Build from the leaf up
-      let tree: SequenceTree = ImmutableMap<Coordinate, SequenceTree>()
+      let tree: SequenceTree = ImmutableMap<Coordinate, SequenceNode>()
       for (let i = path.length - 1; i >= 0; i--) {
         const coord = path[i]
-        tree = ImmutableMap<Coordinate, SequenceTree>().set(coord, tree)
+        const isLastNode = i === path.length - 1
+
+        // Determine result for this node
+        let nodeResult: ProblemResult
+        if (isLastNode) {
+          // Last node: success for solutions, failure for non-solutions
+          nodeResult = isSolution ? ProblemResult.Success : ProblemResult.Failure
+        } else {
+          // Intermediate nodes are incomplete
+          nodeResult = ProblemResult.Incomplete
+        }
+
+        const node: SequenceNode = {
+          result: nodeResult,
+          children: tree
+        }
+        tree = ImmutableMap<Coordinate, SequenceNode>().set(coord, node)
       }
 
       // Merge with existing tree
@@ -247,12 +257,24 @@ export class ProblemDiagram implements IDiagram {
   }
 
   private mergeSequenceTrees(tree1: SequenceTree, tree2: SequenceTree): SequenceTree {
-    return tree2.reduce((merged, subtree2, coord) => {
-      const subtree1 = merged.get(coord)
-      if (subtree1) {
-        return merged.set(coord, this.mergeSequenceTrees(subtree1, subtree2))
+    return tree2.reduce((merged, node2, coord) => {
+      const node1 = merged.get(coord)
+      if (node1) {
+        // Merge the children of both nodes
+        const mergedChildren = this.mergeSequenceTrees(node1.children, node2.children)
+
+        // If the merged node has children, it's not a leaf, so mark as incomplete
+        // Otherwise, keep the result from whichever node had it set
+        const hasChildren = mergedChildren.size > 0
+        const mergedResult = hasChildren ? ProblemResult.Incomplete : node1.result
+
+        const mergedNode: SequenceNode = {
+          result: mergedResult,
+          children: mergedChildren
+        }
+        return merged.set(coord, mergedNode)
       } else {
-        return merged.set(coord, subtree2)
+        return merged.set(coord, node2)
       }
     }, tree1)
   }
@@ -263,9 +285,9 @@ export class ProblemDiagram implements IDiagram {
     const indentStr = '  '.repeat(indent)
     let result = ''
 
-    tree.forEach((subtree, coord) => {
-      result += `${indentStr}[${coord.x},${coord.y}]\n`
-      result += this.sequenceTreeToString(subtree, indent + 1)
+    tree.forEach((node, coord) => {
+      result += `${indentStr}[${coord.x},${coord.y}] ${node.result}\n`
+      result += this.sequenceTreeToString(node.children, indent + 1)
     })
 
     return result
