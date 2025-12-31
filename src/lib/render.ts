@@ -7,7 +7,15 @@ export function toError(message: string): string {
   `
 }
 
-export function boardToSvg(board: Board, rowCount?: number, columnCount?: number, annotations?: Map<string, AnnotationInfo>, lastMove?: Coordinate): string {
+export function boardToSvg(
+  board: Board,
+  rowCount?: number,
+  columnCount?: number,
+  annotations?: Map<string, AnnotationInfo>,
+  lastMove?: Coordinate,
+  areaPrefixes?: Map<string, string>,  // coord key -> prefix
+  areaColors?: Map<string, string>     // prefix -> color
+): string {
   const boardSize = board.dimensions
   const actualRowCount = rowCount ?? boardSize
   const actualColumnCount = columnCount ?? boardSize
@@ -62,6 +70,28 @@ export function boardToSvg(board: Board, rowCount?: number, columnCount?: number
       const x = margin + col * cellSize
       const y = margin + row * cellSize
       svg += `<circle cx="${x}" cy="${y}" r="3" fill="#000"/>`
+    }
+  }
+
+  // Background colors for areas (render before stones)
+  if (areaPrefixes && areaColors) {
+    for (let row = 0; row < actualRowCount; row++) {
+      for (let col = 0; col < actualColumnCount; col++) {
+        const coordKey = `${row},${col}`
+        const prefix = areaPrefixes.get(coordKey)
+
+        if (prefix) {
+          const color = areaColors.get(prefix)
+          if (color) {
+            const x = margin + col * cellSize
+            const y = margin + row * cellSize
+            const rectSize = cellSize * 0.9  // Slightly smaller than cell to leave gap
+
+            // Use semi-transparent colors
+            svg += `<rect x="${x - rectSize/2}" y="${y - rectSize/2}" width="${rectSize}" height="${rectSize}" fill="${color}" opacity="0.3"/>`
+          }
+        }
+      }
     }
   }
 

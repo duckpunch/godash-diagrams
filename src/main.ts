@@ -8,19 +8,20 @@ console.log(`Godash Diagrams v${version}`)
 const EXAMPLES = {
   static: `static
 
-. . . . . . . . .
-. . . . . . . . .
-. . + . . . + . .
-. D . O . . . . .
-. . . O X X . . .
-. . X X O . A . .
-. . + . O . + . .
-. . C . . B . . .
-. . . . . . . . .
+.  .  .  .  .  .  .  .  .
+.  .  .  .  .  .  .  .  .
+.  .  +  .  .  .  +  .  .
+.  D  .  O  .  .  .  .  .
+.  .  .  rO rX rX .  .  .
+.  .  bX bX rO .  A  .  .
+.  .  +  bO bO .  +  .  .
+.  .  C  .  .  B  .  .  .
+.  .  .  .  .  .  .  .  .
 
 black: A,B
 white: D
 triangle: C
+area-colors: r=red, b=blue
 `,
 
   freeplay: `freeplay

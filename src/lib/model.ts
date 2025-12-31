@@ -28,6 +28,7 @@ export interface ParsedBoard {
   columnCount: number
   configStartIndex: number
   otherMarks: Record<string, Coordinate[]>
+  areaPrefixes: Map<string, string>  // coord key -> prefix (e.g., "0,0" -> "r")
 }
 
 export interface IDiagram {
@@ -45,10 +46,12 @@ export class StaticDiagram implements IDiagram {
   private parsedBoard: ParsedBoard
   private element: Element
   private annotations: Map<string, AnnotationInfo> // coord key -> annotation info
+  private areaColors: Map<string, string> // prefix -> color (e.g., "r" -> "red", "b" -> "blue")
 
   constructor(element: Element, lines: string[]) {
     this.element = element
     this.annotations = new Map()
+    this.areaColors = new Map()
 
     // Do a preliminary parse to extract options
     // We need to find where the board ends to parse options
@@ -73,8 +76,38 @@ export class StaticDiagram implements IDiagram {
     const ignoreRulesOption = parsedOptions['ignore-rules']
     const ignoreRules = ignoreRulesOption === 'true' || ignoreRulesOption === '1'
 
-    // Parse board first to get otherMarks
-    const parsed = validateBoard(lines, { ignoreRules, validateCharacters: false })
+    // Parse area-colors option to build prefix -> color mapping
+    const areaColorsOption = parsedOptions['area-colors']
+    if (areaColorsOption) {
+      // Can be single line "r=red, b=blue" or multi-line array ["r=red", "b=blue"]
+      const colorEntries = Array.isArray(areaColorsOption) ? areaColorsOption : [areaColorsOption]
+
+      for (const entry of colorEntries) {
+        // Split on commas to handle "r=red, b=blue" format
+        const pairs = entry.split(',').map(s => s.trim()).filter(s => s.length > 0)
+
+        for (const pair of pairs) {
+          // Parse "prefix=color" format
+          const eqIndex = pair.indexOf('=')
+          if (eqIndex > 0) {
+            const prefix = pair.substring(0, eqIndex).trim()
+            const color = pair.substring(eqIndex + 1).trim()
+
+            if (prefix.length === 1 && /^[a-z]$/.test(prefix)) {
+              this.areaColors.set(prefix, color)
+            } else {
+              throw new Error(`Invalid area prefix '${prefix}'. Must be a single lowercase letter (a-z)`)
+            }
+          }
+        }
+      }
+    }
+
+    // Build set of valid prefixes for validateBoard
+    const validPrefixes = this.areaColors.size > 0 ? new Set(this.areaColors.keys()) : undefined
+
+    // Parse board with prefix knowledge
+    const parsed = validateBoard(lines, { ignoreRules, validateCharacters: false, validPrefixes })
 
     // Parse black and white marks from options
     const blackOption = parsedOptions.black
@@ -153,10 +186,18 @@ export class StaticDiagram implements IDiagram {
   render(): void {
     const element = this.element
 
-    const { board, rowCount, columnCount } = this.parsedBoard
+    const { board, rowCount, columnCount, areaPrefixes } = this.parsedBoard
 
-    // Generate SVG with annotations
-    const boardSvg = boardToSvg(board, rowCount, columnCount, this.annotations)
+    // Generate SVG with annotations and area colors
+    const boardSvg = boardToSvg(
+      board,
+      rowCount,
+      columnCount,
+      this.annotations,
+      undefined,  // lastMove
+      areaPrefixes,
+      this.areaColors
+    )
 
     // Render
     element.innerHTML = boardSvg

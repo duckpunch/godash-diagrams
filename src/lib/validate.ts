@@ -71,10 +71,11 @@ export interface ValidateBoardOptions {
   allowEmpty?: boolean
   validateCharacters?: boolean
   ignoreRules?: boolean
+  validPrefixes?: Set<string>  // Set of valid area prefixes (e.g., 'r', 'b', 'g')
 }
 
 export function validateBoard(lines: string[], options: ValidateBoardOptions = {}): ParsedBoard {
-  const { allowEmpty = false, validateCharacters = true, ignoreRules = false } = options
+  const { allowEmpty = false, validateCharacters = true, ignoreRules = false, validPrefixes } = options
   // Find where board definition starts (skip empty lines after type)
   let boardStartIndex = 1
   while (boardStartIndex < lines.length && lines[boardStartIndex].trim() === '') {
@@ -142,7 +143,8 @@ export function validateBoard(lines: string[], options: ValidateBoardOptions = {
       rowCount: boardSize,
       columnCount: boardSize,
       configStartIndex: boardEndIndex,
-      otherMarks: {}
+      otherMarks: {},
+      areaPrefixes: new Map()
     }
   }
 
@@ -184,11 +186,29 @@ export function validateBoard(lines: string[], options: ValidateBoardOptions = {
   // Parse board and create moves
   const moves: Move[] = []
   const otherMarks: Record<string, Coordinate[]> = {}
+  const areaPrefixes = new Map<string, string>()
 
   for (let row = 0; row < boardTokens.length; row++) {
     const tokens = boardTokens[row]
     for (let col = 0; col < tokens.length; col++) {
-      const token = tokens[col]
+      let token = tokens[col]
+      let prefix: string | undefined
+
+      // Check for area prefix if validPrefixes is provided
+      // Only extract prefix if token is longer than 1 character and starts with a valid prefix
+      if (validPrefixes && token.length > 1) {
+        const potentialPrefix = token[0]
+        if (validPrefixes.has(potentialPrefix)) {
+          prefix = potentialPrefix
+          token = token.slice(1)  // Remove prefix, process rest normally
+        }
+      }
+
+      // Store prefix if present
+      if (prefix) {
+        const coordKey = `${row},${col}`
+        areaPrefixes.set(coordKey, prefix)
+      }
 
       // Check if token is a known board character
       const isKnownToken = /^[.+XOxo]$/.test(token)
@@ -238,6 +258,7 @@ export function validateBoard(lines: string[], options: ValidateBoardOptions = {
     rowCount,
     columnCount,
     configStartIndex: boardEndIndex,
-    otherMarks
+    otherMarks,
+    areaPrefixes
   }
 }
