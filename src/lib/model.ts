@@ -34,10 +34,17 @@ export interface IDiagram {
   render(): void
 }
 
+export type AnnotationShape = 'text' | 'triangle' | 'square' | 'circle' | 'x'
+
+export interface AnnotationInfo {
+  label: string
+  shape: AnnotationShape
+}
+
 export class StaticDiagram implements IDiagram {
   private parsedBoard: ParsedBoard
   private element: Element
-  private annotations: Map<string, string> // coord key -> label
+  private annotations: Map<string, AnnotationInfo> // coord key -> annotation info
 
   constructor(element: Element, lines: string[]) {
     this.element = element
@@ -80,6 +87,40 @@ export class StaticDiagram implements IDiagram {
       ? (Array.isArray(whiteOption) ? whiteOption : whiteOption.split(',').map(m => m.trim()).filter(m => m.length > 0))
       : []
 
+    // Parse shape options
+    const triangleOption = parsedOptions.triangle
+    const squareOption = parsedOptions.square
+    const circleOption = parsedOptions.circle
+    const xOption = parsedOptions.x
+
+    const triangleMarks = triangleOption
+      ? (Array.isArray(triangleOption) ? triangleOption : triangleOption.split(',').map(m => m.trim()).filter(m => m.length > 0))
+      : []
+    const squareMarks = squareOption
+      ? (Array.isArray(squareOption) ? squareOption : squareOption.split(',').map(m => m.trim()).filter(m => m.length > 0))
+      : []
+    const circleMarks = circleOption
+      ? (Array.isArray(circleOption) ? circleOption : circleOption.split(',').map(m => m.trim()).filter(m => m.length > 0))
+      : []
+    const xMarks = xOption
+      ? (Array.isArray(xOption) ? xOption : xOption.split(',').map(m => m.trim()).filter(m => m.length > 0))
+      : []
+
+    // Build shape lookup
+    const shapeMap = new Map<string, AnnotationShape>()
+    for (const mark of triangleMarks) {
+      shapeMap.set(mark, 'triangle')
+    }
+    for (const mark of squareMarks) {
+      shapeMap.set(mark, 'square')
+    }
+    for (const mark of circleMarks) {
+      shapeMap.set(mark, 'circle')
+    }
+    for (const mark of xMarks) {
+      shapeMap.set(mark, 'x')
+    }
+
     // Add stones for marked positions
     let board = parsed.board
     for (const mark of blackMarks) {
@@ -99,9 +140,10 @@ export class StaticDiagram implements IDiagram {
 
     // Build annotations map (all otherMarks become annotations)
     for (const [mark, coordinates] of Object.entries(parsed.otherMarks)) {
+      const shape = shapeMap.get(mark) || 'text'
       for (const coord of coordinates) {
         const key = `${coord.x},${coord.y}`
-        this.annotations.set(key, mark)
+        this.annotations.set(key, { label: mark, shape })
       }
     }
 

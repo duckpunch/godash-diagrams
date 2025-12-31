@@ -20,6 +20,7 @@ const EXAMPLES = {
 
 black: A,B
 white: D
+triangle: C
 `,
 
   freeplay: `freeplay

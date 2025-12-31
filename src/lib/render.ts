@@ -1,4 +1,5 @@
 import { Board, Coordinate, BLACK, WHITE, EMPTY } from 'godash'
+import type { AnnotationInfo } from './model'
 
 export function toError(message: string): string {
   return `
@@ -6,7 +7,7 @@ export function toError(message: string): string {
   `
 }
 
-export function boardToSvg(board: Board, rowCount?: number, columnCount?: number, annotations?: Map<string, string>): string {
+export function boardToSvg(board: Board, rowCount?: number, columnCount?: number, annotations?: Map<string, AnnotationInfo>): string {
   const boardSize = board.dimensions
   const actualRowCount = rowCount ?? boardSize
   const actualColumnCount = columnCount ?? boardSize
@@ -83,21 +84,47 @@ export function boardToSvg(board: Board, rowCount?: number, columnCount?: number
     }
   }
 
-  // Annotations (text labels)
+  // Annotations (text labels or shapes)
   if (annotations) {
     for (let row = 0; row < actualRowCount; row++) {
       for (let col = 0; col < actualColumnCount; col++) {
         const key = `${row},${col}`
-        const label = annotations.get(key)
-        if (label) {
+        const annotation = annotations.get(key)
+        if (annotation) {
           const x = margin + col * cellSize
           const y = margin + row * cellSize
           const color = board.moves.get(Coordinate(row, col), EMPTY)
 
-          // Choose text color based on stone color (or black for empty intersections)
-          const textColor = color === BLACK ? '#fff' : '#000'
+          // Choose color based on stone color (or black for empty intersections)
+          const drawColor = color === BLACK ? '#fff' : '#000'
 
-          svg += `<text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="central" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="${textColor}">${label}</text>`
+          if (annotation.shape === 'text') {
+            // Render as text
+            svg += `<text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="central" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="${drawColor}">${annotation.label}</text>`
+          } else if (annotation.shape === 'triangle') {
+            // Render as triangle (pointing up)
+            const size = stoneRadius * 0.8
+            const x1 = x
+            const y1 = y - size
+            const x2 = x - size * 0.866 // cos(30°) * size
+            const y2 = y + size * 0.5
+            const x3 = x + size * 0.866
+            const y3 = y + size * 0.5
+            svg += `<polygon points="${x1},${y1} ${x2},${y2} ${x3},${y3}" fill="none" stroke="${drawColor}" stroke-width="2"/>`
+          } else if (annotation.shape === 'square') {
+            // Render as square
+            const size = stoneRadius * 0.7
+            svg += `<rect x="${x - size}" y="${y - size}" width="${size * 2}" height="${size * 2}" fill="none" stroke="${drawColor}" stroke-width="2"/>`
+          } else if (annotation.shape === 'circle') {
+            // Render as circle
+            const radius = stoneRadius * 0.6
+            svg += `<circle cx="${x}" cy="${y}" r="${radius}" fill="none" stroke="${drawColor}" stroke-width="2"/>`
+          } else if (annotation.shape === 'x') {
+            // Render as X
+            const size = stoneRadius * 0.7
+            svg += `<line x1="${x - size}" y1="${y - size}" x2="${x + size}" y2="${y + size}" stroke="${drawColor}" stroke-width="2"/>`
+            svg += `<line x1="${x - size}" y1="${y + size}" x2="${x + size}" y2="${y - size}" stroke="${drawColor}" stroke-width="2"/>`
+          }
         }
       }
     }
