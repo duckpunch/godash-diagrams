@@ -16,6 +16,7 @@ export type ProblemResult = typeof ProblemResult[keyof typeof ProblemResult]
 export interface SequenceNode {
   result: ProblemResult
   children: SequenceTree
+  wildcardChild?: SequenceNode  // For "*" moves - handles any unspecified player move
 }
 
 // Recursive type for sequence tree where each level represents a move option
@@ -182,19 +183,37 @@ export class ProblemDiagram implements IDiagram {
       // Split sequence on ">" to get marks
       const marks = sequence.split('>').map(m => m.trim()).filter(m => m.length > 0)
 
-      // Validate all marks exist in otherMarks
-      for (const mark of marks) {
+      // Validate all marks exist in otherMarks (or are "*")
+      for (let i = 0; i < marks.length; i++) {
+        const mark = marks[i]
+
+        // "*" is allowed only for player moves (alternating based on toPlay)
+        if (mark === '*') {
+          const isPlayerMove = (i % 2 === 0) // Player moves at even indices (0, 2, 4...)
+          if (!isPlayerMove) {
+            throw new Error(`${label} '${sequence}': wildcard '*' can only be used for player moves, not computer responses (position ${i + 1})`)
+          }
+          continue
+        }
+
         if (!parsed.otherMarks[mark]) {
           throw new Error(`${label} '${sequence}': mark '${mark}' does not appear in the board`)
         }
       }
 
-      // Validate the move sequence by applying moves to the board
+      // Validate the move sequence by applying moves to the board (skip wildcards)
       let testBoard = board
       let currentColor = this.toPlay
 
       for (let i = 0; i < marks.length; i++) {
         const mark = marks[i]
+
+        // Skip wildcard validation (can't validate "any move")
+        if (mark === '*') {
+          currentColor = currentColor === BLACK ? WHITE : BLACK
+          continue
+        }
+
         const coordinates = parsed.otherMarks[mark]
         const coord = coordinates[0] // We already validated marks are unique
         const move = Move(coord, currentColor)
@@ -241,41 +260,110 @@ export class ProblemDiagram implements IDiagram {
     for (const { sequence, isSolution } of allSequences) {
       const marks = sequence.split('>').map(m => m.trim()).filter(m => m.length > 0)
 
-      // Build path of coordinates
-      const path: Coordinate[] = []
+      // Build path of coordinates and track wildcards
+      const path: Array<Coordinate | '*'> = []
       for (const mark of marks) {
-        path.push(parsed.otherMarks[mark][0])
-      }
-
-      // Build from the leaf up
-      let tree: SequenceTree = ImmutableMap<Coordinate, SequenceNode>()
-      for (let i = path.length - 1; i >= 0; i--) {
-        const coord = path[i]
-        const isLastNode = i === path.length - 1
-
-        // Determine result for this node
-        let nodeResult: ProblemResult
-        if (isLastNode) {
-          // Last node: success for solutions, failure for non-solutions
-          nodeResult = isSolution ? ProblemResult.Success : ProblemResult.Failure
+        if (mark === '*') {
+          path.push('*')
         } else {
-          // Intermediate nodes are incomplete
-          nodeResult = ProblemResult.Incomplete
+          path.push(parsed.otherMarks[mark][0])
         }
-
-        const node: SequenceNode = {
-          result: nodeResult,
-          children: tree
-        }
-        tree = ImmutableMap<Coordinate, SequenceNode>().set(coord, node)
       }
 
-      // Merge with existing tree
-      this.sequenceTree = this.mergeSequenceTrees(this.sequenceTree, tree)
+      // Check if sequence starts with wildcard (root-level wildcard)
+      if (path[0] === '*') {
+        // Build the continuation tree (everything after the wildcard)
+        let continuationTree: SequenceTree = ImmutableMap<Coordinate, SequenceNode>()
+
+        for (let i = path.length - 1; i >= 1; i--) {
+          const item = path[i]
+          if (item === '*') {
+            throw new Error(`Sequence '${sequence}': cannot have consecutive wildcards`)
+          }
+
+          const coord = item as Coordinate
+          const isLastNode = i === path.length - 1
+          const nodeResult = isLastNode
+            ? (isSolution ? ProblemResult.Success : ProblemResult.Failure)
+            : ProblemResult.Incomplete
+
+          const node: SequenceNode = {
+            result: nodeResult,
+            children: continuationTree,
+            wildcardChild: undefined
+          }
+          continuationTree = ImmutableMap<Coordinate, SequenceNode>().set(coord, node)
+        }
+
+        // Apply wildcardChild to all root nodes (or create a dummy root if tree is empty)
+        const wildcardNode: SequenceNode = {
+          result: ProblemResult.Incomplete,
+          children: continuationTree,
+          wildcardChild: undefined
+        }
+
+        this.sequenceTree = this.applyWildcardToTree(this.sequenceTree, wildcardNode)
+      } else {
+        // Build from the leaf up, handling wildcards specially
+        // A wildcard means the parent node should set wildcardChild to point to the computer's response
+        let tree: SequenceTree = ImmutableMap<Coordinate, SequenceNode>()
+        let wildcardTree: SequenceTree = ImmutableMap<Coordinate, SequenceNode>()
+        let hasWildcard = false
+
+        for (let i = path.length - 1; i >= 0; i--) {
+          const item = path[i]
+          const isLastNode = i === path.length - 1
+
+          // Determine result for this node
+          let nodeResult: ProblemResult
+          if (isLastNode) {
+            // Last node: success for solutions, failure for non-solutions
+            nodeResult = isSolution ? ProblemResult.Success : ProblemResult.Failure
+          } else {
+            // Intermediate nodes are incomplete
+            nodeResult = ProblemResult.Incomplete
+          }
+
+          if (item === '*') {
+            // Skip wildcards - they're handled as properties of the previous node
+            hasWildcard = true
+            continue
+          }
+
+          const coord = item as Coordinate
+
+          // If we just passed a wildcard, this coord is the computer response to the wildcard
+          if (hasWildcard) {
+            wildcardTree = tree
+            tree = ImmutableMap<Coordinate, SequenceNode>()
+            hasWildcard = false
+          }
+
+          const node: SequenceNode = {
+            result: nodeResult,
+            children: tree,
+            wildcardChild: wildcardTree.size > 0 ? { result: ProblemResult.Incomplete, children: wildcardTree, wildcardChild: undefined } : undefined
+          }
+          tree = ImmutableMap<Coordinate, SequenceNode>().set(coord, node)
+          wildcardTree = ImmutableMap<Coordinate, SequenceNode>()
+        }
+
+        // Merge with existing tree
+        this.sequenceTree = this.mergeSequenceTrees(this.sequenceTree, tree)
+      }
     }
 
     // Set current tree to the root of sequence tree
     this.currentTree = this.sequenceTree
+  }
+
+  private applyWildcardToTree(tree: SequenceTree, wildcardNode: SequenceNode): SequenceTree {
+    // Apply wildcardChild to all nodes in the tree
+    return tree.map(node => ({
+      result: node.result,
+      children: node.children,
+      wildcardChild: wildcardNode
+    }))
   }
 
   private mergeSequenceTrees(tree1: SequenceTree, tree2: SequenceTree): SequenceTree {
@@ -285,14 +373,27 @@ export class ProblemDiagram implements IDiagram {
         // Merge the children of both nodes
         const mergedChildren = this.mergeSequenceTrees(node1.children, node2.children)
 
+        // Merge wildcardChild if present in either node
+        let mergedWildcardChild: SequenceNode | undefined = undefined
+        if (node1.wildcardChild && node2.wildcardChild) {
+          // Both have wildcardChild - merge them recursively
+          const dummyTree1 = ImmutableMap<Coordinate, SequenceNode>().set(Coordinate(0, 0), node1.wildcardChild)
+          const dummyTree2 = ImmutableMap<Coordinate, SequenceNode>().set(Coordinate(0, 0), node2.wildcardChild)
+          const mergedDummy = this.mergeSequenceTrees(dummyTree1, dummyTree2)
+          mergedWildcardChild = mergedDummy.get(Coordinate(0, 0))
+        } else {
+          mergedWildcardChild = node1.wildcardChild || node2.wildcardChild
+        }
+
         // If the merged node has children, it's not a leaf, so mark as incomplete
         // Otherwise, keep the result from whichever node had it set
-        const hasChildren = mergedChildren.size > 0
+        const hasChildren = mergedChildren.size > 0 || mergedWildcardChild !== undefined
         const mergedResult = hasChildren ? ProblemResult.Incomplete : node1.result
 
         const mergedNode: SequenceNode = {
           result: mergedResult,
-          children: mergedChildren
+          children: mergedChildren,
+          wildcardChild: mergedWildcardChild
         }
         return merged.set(coord, mergedNode)
       } else {
@@ -303,7 +404,21 @@ export class ProblemDiagram implements IDiagram {
 
   private handleUserMove(coord: Coordinate): void {
     // Check if this move is in the current tree
-    const node = this.currentTree.get(coord)
+    let node = this.currentTree.get(coord)
+
+    // If not found in explicit children, check for wildcard
+    if (!node) {
+      // Check if any node has a wildcardChild (we need to find one)
+      // Since wildcards apply to "any other move", we check if there's exactly one node with wildcardChild
+      const nodesWithWildcard = Array.from(this.currentTree.values()).filter(n => n.wildcardChild)
+      if (nodesWithWildcard.length > 0) {
+        // Use the wildcard from the first node (there should only be one per level)
+        const wildcardParent = nodesWithWildcard[0]
+        if (wildcardParent.wildcardChild) {
+          node = wildcardParent.wildcardChild
+        }
+      }
+    }
 
     // Play the move regardless of whether it's in the tree
     const currentColor = this.isBlackTurn ? BLACK : WHITE
@@ -313,7 +428,7 @@ export class ProblemDiagram implements IDiagram {
     this.isBlackTurn = !this.isBlackTurn
 
     if (!node) {
-      // Move not in tree - only set to failure if not already in success state
+      // Move not in tree and no wildcard - only set to failure if not already in success state
       if (this.result !== ProblemResult.Success) {
         this.result = ProblemResult.Failure
       }
@@ -322,7 +437,7 @@ export class ProblemDiagram implements IDiagram {
       return
     }
 
-    // Valid move - update tree and result
+    // Valid move (either explicit or wildcard) - update tree and result
     this.currentTree = node.children
     this.result = node.result
 

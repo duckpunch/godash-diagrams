@@ -48,6 +48,7 @@ sequences:
   c>b>a
   a>b>f>d
   d>c
+  *>d
 
 solutions:
   a>b>d`
