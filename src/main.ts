@@ -46,7 +46,19 @@ sequences:
   *>d
 
 solutions:
-  a>b>d`
+  a>b>d`,
+
+  replay: `replay
+
+.  .  .  .  .  .  .  .  .
+.  .  .  .  .  .  .  .  .
+.  .  1  .  .  .  3  .  .
+.  .  .  .  .  .  .  .  .
+.  .  .  .  .  .  .  .  .
+.  . 10  8  6  .  .  .  .
+.  .  4  7  5  .  2  .  .
+. 11  9  .  .  .  .  .  .
+.  .  .  .  .  .  .  .  .`
 }
 
 const textarea = document.querySelector<HTMLTextAreaElement>('#source-input')!

@@ -633,6 +633,12 @@ export class ProblemDiagram implements IDiagram {
   }
 }
 
+export interface ParsedMove {
+  moveNumber: number
+  coordinate: Coordinate
+  color: Color  // Determined by odd/even (1=black, 2=white, etc.)
+}
+
 export type ColorMode = 'black' | 'white' | 'alternate'
 
 export class FreeplayDiagram implements IDiagram {
@@ -863,12 +869,244 @@ export class FreeplayDiagram implements IDiagram {
   }
 }
 
-export type Diagram = StaticDiagram | FreeplayDiagram | ProblemDiagram
+export class ReplayDiagram implements IDiagram {
+  private parsedBoard: ParsedBoard
+  private element: Element
+  private moveSequence: ParsedMove[]
+  private currentMoveIndex: number  // -1 = starting position, 0 = after move 1, etc.
+  private currentBoard: Board
+  private initialBoard: Board
+  private showNumbers: boolean
+
+  constructor(element: Element, lines: string[]) {
+    this.element = element
+
+    // Parse board - don't allow empty, don't validate characters (need to parse numbers)
+    const parsed = validateBoard(lines, { allowEmpty: false, validateCharacters: false })
+    this.parsedBoard = parsed
+    this.initialBoard = parsed.board
+
+    // Parse options
+    const parsedOptions = parseOptions(lines, parsed.configStartIndex)
+
+    // Parse start-color option (default to black)
+    const startColorOption = parsedOptions['start-color']
+    const startColorValue = startColorOption
+      ? (Array.isArray(startColorOption) ? startColorOption[0] : startColorOption).toLowerCase()
+      : 'black'
+
+    if (startColorValue !== 'black' && startColorValue !== 'white') {
+      throw new Error(`Invalid start-color value '${startColorValue}'. Must be 'black' or 'white'`)
+    }
+    const startColor = startColorValue === 'white' ? WHITE : BLACK
+
+    // Parse show-numbers option (default to false)
+    const showNumbersOption = parsedOptions['show-numbers']
+    this.showNumbers = showNumbersOption === 'true' || showNumbersOption === '1'
+
+    // Parse initial-move option (default to 0)
+    const initialMoveOption = parsedOptions['initial-move']
+    let initialMove = 0
+    if (initialMoveOption) {
+      const initialMoveValue = Array.isArray(initialMoveOption) ? initialMoveOption[0] : initialMoveOption
+      initialMove = parseInt(initialMoveValue, 10)
+      if (isNaN(initialMove) || initialMove < 0) {
+        throw new Error(`Invalid initial-move value '${initialMoveValue}'. Must be a non-negative integer`)
+      }
+    }
+
+    // Build move sequence from otherMarks
+    this.moveSequence = this.buildMoveSequence(parsed.otherMarks, startColor)
+
+    // Validate initial-move is within bounds
+    if (initialMove > this.moveSequence.length) {
+      throw new Error(`initial-move ${initialMove} exceeds number of moves (${this.moveSequence.length})`)
+    }
+
+    // Set current move index (subtract 1 because index 0 = after move 1)
+    this.currentMoveIndex = initialMove - 1
+    this.currentBoard = this.initialBoard
+
+    // Build initial board state
+    this.rebuildBoard()
+  }
+
+  private buildMoveSequence(otherMarks: Record<string, Coordinate[]>, startColor: Color): ParsedMove[] {
+    // Extract all numbered marks
+    const numberedMarks: Array<{ number: number, coordinate: Coordinate }> = []
+
+    for (const [mark, coordinates] of Object.entries(otherMarks)) {
+      // Try to parse as number
+      const num = parseInt(mark, 10)
+      if (!isNaN(num) && num.toString() === mark) {
+        // Valid number
+        if (num <= 0) {
+          throw new Error(`Move numbers must be positive (found ${num})`)
+        }
+        if (coordinates.length > 1) {
+          throw new Error(`Move number ${num} appears at multiple positions`)
+        }
+        numberedMarks.push({ number: num, coordinate: coordinates[0] })
+      }
+    }
+
+    // Sort by move number
+    numberedMarks.sort((a, b) => a.number - b.number)
+
+    // Validate consecutive sequence (1, 2, 3, ...)
+    if (numberedMarks.length === 0) {
+      throw new Error('Replay diagram must have at least one numbered move')
+    }
+
+    for (let i = 0; i < numberedMarks.length; i++) {
+      const expected = i + 1
+      const actual = numberedMarks[i].number
+      if (actual !== expected) {
+        throw new Error(`Move numbers must be consecutive starting from 1 (expected ${expected}, found ${actual})`)
+      }
+    }
+
+    // Build ParsedMove array with colors
+    const moves: ParsedMove[] = []
+    for (const { number, coordinate } of numberedMarks) {
+      // Odd moves are startColor, even moves are opposite
+      const color = (number % 2 === 1) ? startColor : (startColor === BLACK ? WHITE : BLACK)
+      moves.push({ moveNumber: number, coordinate, color })
+    }
+
+    return moves
+  }
+
+  private rebuildBoard(): void {
+    let board = this.initialBoard
+
+    // Apply moves up to currentMoveIndex
+    for (let i = 0; i <= this.currentMoveIndex; i++) {
+      const move = this.moveSequence[i]
+      board = addMove(board, Move(move.coordinate, move.color))
+    }
+
+    this.currentBoard = board
+  }
+
+  private goToMove(index: number): void {
+    this.currentMoveIndex = index
+    this.rebuildBoard()
+    this.render()
+  }
+
+  private next(): void {
+    if (this.currentMoveIndex < this.moveSequence.length - 1) {
+      this.goToMove(this.currentMoveIndex + 1)
+    }
+  }
+
+  private previous(): void {
+    if (this.currentMoveIndex >= 0) {
+      this.goToMove(this.currentMoveIndex - 1)
+    }
+  }
+
+  private first(): void {
+    this.goToMove(-1)
+  }
+
+  private last(): void {
+    this.goToMove(this.moveSequence.length - 1)
+  }
+
+  render(): void {
+    const element = this.element
+    const { rowCount, columnCount } = this.parsedBoard
+
+    // Build annotations map if show-numbers is enabled
+    const annotations = new Map<string, AnnotationInfo>()
+    if (this.showNumbers) {
+      // Add move numbers as text annotations for visible moves
+      for (let i = 0; i <= this.currentMoveIndex; i++) {
+        const move = this.moveSequence[i]
+        const key = `${move.coordinate.x},${move.coordinate.y}`
+        annotations.set(key, {
+          label: String(move.moveNumber),
+          shape: 'text'
+        })
+      }
+    }
+
+    // Get last move for marker
+    let lastMove: Coordinate | undefined
+    if (this.currentMoveIndex >= 0) {
+      lastMove = this.moveSequence[this.currentMoveIndex].coordinate
+    }
+
+    // Generate SVG
+    const boardSvg = boardToSvg(this.currentBoard, rowCount, columnCount, annotations, lastMove)
+
+    // Create UI with move counter and navigation buttons
+    const firstButtonId = `first-${Math.random().toString(36).substr(2, 9)}`
+    const prevButtonId = `prev-${Math.random().toString(36).substr(2, 9)}`
+    const nextButtonId = `next-${Math.random().toString(36).substr(2, 9)}`
+    const lastButtonId = `last-${Math.random().toString(36).substr(2, 9)}`
+
+    const buttonStyle = 'padding: 0.5rem 1rem; margin: 0.5rem 0.25rem; border: 1px solid #ccc; border-radius: 4px; background: #fff; cursor: pointer; font-size: 0.9rem;'
+    const disabledStyle = 'padding: 0.5rem 1rem; margin: 0.5rem 0.25rem; border: 1px solid #ccc; border-radius: 4px; background: #f0f0f0; cursor: not-allowed; font-size: 0.9rem; color: #999;'
+
+    let output = `<div class="replay-container">`
+
+    // Move counter
+    const currentMove = this.currentMoveIndex + 1  // Convert from index to move number
+    const totalMoves = this.moveSequence.length
+    let currentColor = ''
+    if (this.currentMoveIndex >= 0) {
+      currentColor = this.moveSequence[this.currentMoveIndex].color === BLACK ? 'Black' : 'White'
+    }
+    const moveInfo = this.currentMoveIndex >= 0
+      ? `Move ${currentMove} / ${totalMoves} (${currentColor})`
+      : `Start position (${totalMoves} moves)`
+
+    output += `<div style="margin-bottom: 1rem; padding: 0.5rem; font-weight: 600; font-size: 1.1rem;">${moveInfo}</div>`
+    output += boardSvg
+
+    // Navigation buttons
+    output += `<div style="margin-top: 1rem;">`
+    output += `<button id="${firstButtonId}" style="${this.currentMoveIndex >= 0 ? buttonStyle : disabledStyle}" ${this.currentMoveIndex < 0 ? 'disabled' : ''}>|&lt;</button>`
+    output += `<button id="${prevButtonId}" style="${this.currentMoveIndex >= 0 ? buttonStyle : disabledStyle}" ${this.currentMoveIndex < 0 ? 'disabled' : ''}>&lt;</button>`
+    output += `<button id="${nextButtonId}" style="${this.currentMoveIndex < this.moveSequence.length - 1 ? buttonStyle : disabledStyle}" ${this.currentMoveIndex >= this.moveSequence.length - 1 ? 'disabled' : ''}>&gt;</button>`
+    output += `<button id="${lastButtonId}" style="${this.currentMoveIndex < this.moveSequence.length - 1 ? buttonStyle : disabledStyle}" ${this.currentMoveIndex >= this.moveSequence.length - 1 ? 'disabled' : ''}>&gt;|</button>`
+    output += `</div>`
+
+    output += `</div>`
+
+    element.innerHTML = output
+
+    // Add button event listeners
+    const firstButton = document.getElementById(firstButtonId)
+    const prevButton = document.getElementById(prevButtonId)
+    const nextButton = document.getElementById(nextButtonId)
+    const lastButton = document.getElementById(lastButtonId)
+
+    if (firstButton) {
+      firstButton.addEventListener('click', () => this.first())
+    }
+    if (prevButton) {
+      prevButton.addEventListener('click', () => this.previous())
+    }
+    if (nextButton) {
+      nextButton.addEventListener('click', () => this.next())
+    }
+    if (lastButton) {
+      lastButton.addEventListener('click', () => this.last())
+    }
+  }
+}
+
+export type Diagram = StaticDiagram | FreeplayDiagram | ProblemDiagram | ReplayDiagram
 
 export const DIAGRAM_TYPES = {
   static: StaticDiagram,
   freeplay: FreeplayDiagram,
   problem: ProblemDiagram,
+  replay: ReplayDiagram,
 } as const
 
 export type DiagramType = keyof typeof DIAGRAM_TYPES
