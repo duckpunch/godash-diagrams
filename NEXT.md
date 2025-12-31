@@ -1,5 +1,3 @@
-- Annotation support (at least on static)
-- Freeplay pinned to a color
 - Clean up visually (de-language buttons)
 - Ko
 - Colors on static

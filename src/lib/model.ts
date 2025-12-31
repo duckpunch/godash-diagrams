@@ -627,6 +627,8 @@ export class ProblemDiagram implements IDiagram {
   }
 }
 
+export type ColorMode = 'black' | 'white' | 'alternate'
+
 export class FreeplayDiagram implements IDiagram {
   private parsedBoard: ParsedBoard
   private element: Element
@@ -635,15 +637,35 @@ export class FreeplayDiagram implements IDiagram {
   private history: HistoryEntry[]
   private currentMoveIndex: number // -1 means no moves yet
   private isBlackTurn: boolean
+  private colorMode: ColorMode
 
   constructor(element: Element, lines: string[]) {
     this.element = element
-    this.parsedBoard = validateBoard(lines, { allowEmpty: true })
+
+    // Parse board
+    const parsed = validateBoard(lines, { allowEmpty: true })
+    this.parsedBoard = parsed
+
+    // Parse options
+    const parsedOptions = parseOptions(lines, parsed.configStartIndex)
+
+    // Parse color option (default to "alternate")
+    const colorOption = parsedOptions.color
+    const colorValue = colorOption
+      ? (Array.isArray(colorOption) ? colorOption[0] : colorOption).toLowerCase()
+      : 'alternate'
+
+    if (colorValue !== 'black' && colorValue !== 'white' && colorValue !== 'alternate') {
+      throw new Error(`Invalid color value '${colorValue}'. Must be 'black', 'white', or 'alternate'`)
+    }
+    this.colorMode = colorValue as ColorMode
+
     this.initialBoard = this.parsedBoard.board
     this.currentBoard = this.parsedBoard.board
     this.history = []
     this.currentMoveIndex = -1
-    this.isBlackTurn = true
+    // Set initial turn based on color mode
+    this.isBlackTurn = this.colorMode !== 'white'
   }
 
   private rebuildBoard(): void {
@@ -661,13 +683,20 @@ export class FreeplayDiagram implements IDiagram {
 
     this.currentBoard = board
 
-    // Update whose turn it is based on history
-    if (this.currentMoveIndex === -1) {
-      this.isBlackTurn = true
+    // Update whose turn it is based on color mode and history
+    if (this.colorMode === 'black') {
+      this.isBlackTurn = true // Always black
+    } else if (this.colorMode === 'white') {
+      this.isBlackTurn = false // Always white
     } else {
-      const lastEntry = this.history[this.currentMoveIndex]
-      const lastColor = lastEntry.type === 'move' ? lastEntry.move.color : lastEntry.color
-      this.isBlackTurn = lastColor === WHITE
+      // Alternate mode - toggle based on history
+      if (this.currentMoveIndex === -1) {
+        this.isBlackTurn = true
+      } else {
+        const lastEntry = this.history[this.currentMoveIndex]
+        const lastColor = lastEntry.type === 'move' ? lastEntry.move.color : lastEntry.color
+        this.isBlackTurn = lastColor === WHITE
+      }
     }
   }
 
@@ -696,8 +725,10 @@ export class FreeplayDiagram implements IDiagram {
     this.history.push({ type: 'pass', color })
     this.currentMoveIndex++
 
-    // Toggle turn
-    this.isBlackTurn = !this.isBlackTurn
+    // Toggle turn (only in alternate mode, rebuildBoard will handle fixed colors)
+    if (this.colorMode === 'alternate') {
+      this.isBlackTurn = !this.isBlackTurn
+    }
 
     this.render()
   }
@@ -706,7 +737,12 @@ export class FreeplayDiagram implements IDiagram {
     this.history = []
     this.currentMoveIndex = -1
     this.currentBoard = this.initialBoard
-    this.isBlackTurn = true
+    // Set initial turn based on color mode
+    if (this.colorMode === 'white') {
+      this.isBlackTurn = false
+    } else {
+      this.isBlackTurn = true // For both 'black' and 'alternate'
+    }
     this.render()
   }
 
