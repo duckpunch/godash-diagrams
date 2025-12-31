@@ -37,9 +37,11 @@ export interface IDiagram {
 export class StaticDiagram implements IDiagram {
   private parsedBoard: ParsedBoard
   private element: Element
+  private annotations: Map<string, string> // coord key -> label
 
   constructor(element: Element, lines: string[]) {
     this.element = element
+    this.annotations = new Map()
 
     // Do a preliminary parse to extract options
     // We need to find where the board ends to parse options
@@ -64,7 +66,46 @@ export class StaticDiagram implements IDiagram {
     const ignoreRulesOption = parsedOptions['ignore-rules']
     const ignoreRules = ignoreRulesOption === 'true' || ignoreRulesOption === '1'
 
-    this.parsedBoard = validateBoard(lines, { ignoreRules })
+    // Parse board first to get otherMarks
+    const parsed = validateBoard(lines, { ignoreRules, validateCharacters: false })
+
+    // Parse black and white marks from options
+    const blackOption = parsedOptions.black
+    const whiteOption = parsedOptions.white
+
+    const blackMarks = blackOption
+      ? (Array.isArray(blackOption) ? blackOption : blackOption.split(',').map(m => m.trim()).filter(m => m.length > 0))
+      : []
+    const whiteMarks = whiteOption
+      ? (Array.isArray(whiteOption) ? whiteOption : whiteOption.split(',').map(m => m.trim()).filter(m => m.length > 0))
+      : []
+
+    // Add stones for marked positions
+    let board = parsed.board
+    for (const mark of blackMarks) {
+      if (parsed.otherMarks[mark]) {
+        for (const coord of parsed.otherMarks[mark]) {
+          board = addMove(board, Move(coord, BLACK))
+        }
+      }
+    }
+    for (const mark of whiteMarks) {
+      if (parsed.otherMarks[mark]) {
+        for (const coord of parsed.otherMarks[mark]) {
+          board = addMove(board, Move(coord, WHITE))
+        }
+      }
+    }
+
+    // Build annotations map (all otherMarks become annotations)
+    for (const [mark, coordinates] of Object.entries(parsed.otherMarks)) {
+      for (const coord of coordinates) {
+        const key = `${coord.x},${coord.y}`
+        this.annotations.set(key, mark)
+      }
+    }
+
+    this.parsedBoard = { ...parsed, board }
   }
 
   render(): void {
@@ -72,8 +113,8 @@ export class StaticDiagram implements IDiagram {
 
     const { board, rowCount, columnCount } = this.parsedBoard
 
-    // Generate SVG
-    const boardSvg = boardToSvg(board, rowCount, columnCount)
+    // Generate SVG with annotations
+    const boardSvg = boardToSvg(board, rowCount, columnCount, this.annotations)
 
     // Render
     element.innerHTML = boardSvg

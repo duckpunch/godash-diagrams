@@ -11,22 +11,16 @@ const EXAMPLES = {
 . . . . . . . . .
 . . . . . . . . .
 . . + . . . + . .
-. . . O . . . . .
+. D . O . . . . .
 . . . O X X . . .
-. . X X O . . . .
+. . X X O . A . .
 . . + . O . + . .
+. . C . . B . . .
 . . . . . . . . .
-. . . . . . . . .
+
+black: A,B
+white: D
 `,
-
-  'ignore-rules': `static
-
-. O . .
-O X O .
-. O . .
-. . . .
-
-ignore-rules: true`,
 
   freeplay: `freeplay
 

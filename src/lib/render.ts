@@ -6,7 +6,7 @@ export function toError(message: string): string {
   `
 }
 
-export function boardToSvg(board: Board, rowCount?: number, columnCount?: number): string {
+export function boardToSvg(board: Board, rowCount?: number, columnCount?: number, annotations?: Map<string, string>): string {
   const boardSize = board.dimensions
   const actualRowCount = rowCount ?? boardSize
   const actualColumnCount = columnCount ?? boardSize
@@ -78,6 +78,26 @@ export function boardToSvg(board: Board, rowCount?: number, columnCount?: number
         } else if (color === WHITE) {
           // White stone
           svg += `<circle cx="${x}" cy="${y}" r="${stoneRadius}" fill="#fff" stroke="#000" stroke-width="1"/>`
+        }
+      }
+    }
+  }
+
+  // Annotations (text labels)
+  if (annotations) {
+    for (let row = 0; row < actualRowCount; row++) {
+      for (let col = 0; col < actualColumnCount; col++) {
+        const key = `${row},${col}`
+        const label = annotations.get(key)
+        if (label) {
+          const x = margin + col * cellSize
+          const y = margin + row * cellSize
+          const color = board.moves.get(Coordinate(row, col), EMPTY)
+
+          // Choose text color based on stone color (or black for empty intersections)
+          const textColor = color === BLACK ? '#fff' : '#000'
+
+          svg += `<text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="central" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="${textColor}">${label}</text>`
         }
       }
     }
