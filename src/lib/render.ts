@@ -7,7 +7,7 @@ export function toError(message: string): string {
   `
 }
 
-export function boardToSvg(board: Board, rowCount?: number, columnCount?: number, annotations?: Map<string, AnnotationInfo>): string {
+export function boardToSvg(board: Board, rowCount?: number, columnCount?: number, annotations?: Map<string, AnnotationInfo>, lastMove?: Coordinate): string {
   const boardSize = board.dimensions
   const actualRowCount = rowCount ?? boardSize
   const actualColumnCount = columnCount ?? boardSize
@@ -127,6 +127,23 @@ export function boardToSvg(board: Board, rowCount?: number, columnCount?: number
           }
         }
       }
+    }
+  }
+
+  // Last move marker (circle)
+  if (lastMove) {
+    const row = lastMove.x
+    const col = lastMove.y
+    if (row >= 0 && row < actualRowCount && col >= 0 && col < actualColumnCount) {
+      const x = margin + col * cellSize
+      const y = margin + row * cellSize
+      const color = board.moves.get(lastMove, EMPTY)
+
+      // Choose color based on stone color
+      const drawColor = color === BLACK ? '#fff' : '#000'
+      const radius = stoneRadius * 0.5
+
+      svg += `<circle cx="${x}" cy="${y}" r="${radius}" fill="none" stroke="${drawColor}" stroke-width="2.5"/>`
     }
   }
 

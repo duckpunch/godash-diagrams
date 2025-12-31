@@ -571,8 +571,14 @@ export class ProblemDiagram implements IDiagram {
     const element = this.element
     const { rowCount, columnCount } = this.parsedBoard
 
+    // Determine last move coordinate
+    let lastMove: Coordinate | undefined
+    if (this.playedMoves.length > 0) {
+      lastMove = this.playedMoves[this.playedMoves.length - 1].coordinate
+    }
+
     // Generate SVG using current board state
-    const boardSvg = boardToSvg(this.currentBoard, rowCount, columnCount)
+    const boardSvg = boardToSvg(this.currentBoard, rowCount, columnCount, undefined, lastMove)
 
     // Render
     let output = boardSvg
@@ -751,8 +757,17 @@ export class FreeplayDiagram implements IDiagram {
 
     const { rowCount, columnCount } = this.parsedBoard
 
+    // Determine last move coordinate
+    let lastMove: Coordinate | undefined
+    if (this.currentMoveIndex >= 0) {
+      const lastEntry = this.history[this.currentMoveIndex]
+      if (lastEntry.type === 'move') {
+        lastMove = lastEntry.move.coordinate
+      }
+    }
+
     // Generate SVG using current board state
-    const boardSvg = boardToSvg(this.currentBoard, rowCount, columnCount)
+    const boardSvg = boardToSvg(this.currentBoard, rowCount, columnCount, undefined, lastMove)
 
     // Create container with turn indicator, SVG, and buttons
     const turnInfoId = `turn-info-${Math.random().toString(36).substr(2, 9)}`
