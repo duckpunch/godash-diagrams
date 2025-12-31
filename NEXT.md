@@ -1,6 +1,4 @@
 - Clean up visually (de-language buttons)
 - Ko
-- Colors on static
 - Copy board
-- Last move played
 - Arrow support on focus
