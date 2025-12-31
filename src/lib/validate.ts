@@ -146,17 +146,24 @@ export function validateBoard(lines: string[], options: ValidateBoardOptions = {
     }
   }
 
-  // Validate all rows have same number of non-space characters (rectangle)
-  const columnCounts = boardRows.map(row => row.replace(/\s/g, '').length)
+  // Parse board rows by splitting on whitespace
+  const boardTokens: string[][] = []
+  for (const row of boardRows) {
+    const tokens = row.trim().split(/\s+/).filter(t => t.length > 0)
+    boardTokens.push(tokens)
+  }
+
+  // Validate all rows have same number of tokens (rectangle)
+  const columnCounts = boardTokens.map(tokens => tokens.length)
   const firstColumnCount = columnCounts[0]
 
   if (!columnCounts.every(count => count === firstColumnCount)) {
-    throw new ValidationError('All board rows must have the same number of non-space characters')
+    throw new ValidationError('All board rows must have the same number of positions')
   }
 
   // Get row and column counts
-  const rowCount = boardRows.length
-  const columnCount = boardRows[0].replace(/\s/g, '').length
+  const rowCount = boardTokens.length
+  const columnCount = firstColumnCount
   const isSquare = rowCount === columnCount
 
   // Validate row/column counts don't exceed size if specified
@@ -178,41 +185,38 @@ export function validateBoard(lines: string[], options: ValidateBoardOptions = {
   const moves: Move[] = []
   const otherMarks: Record<string, Coordinate[]> = {}
 
-  for (let row = 0; row < boardRows.length; row++) {
-    const line = boardRows[row]
-    let col = 0
-    for (let i = 0; i < line.length; i++) {
-      const char = line[i]
-      if (char === ' ') continue
+  for (let row = 0; row < boardTokens.length; row++) {
+    const tokens = boardTokens[row]
+    for (let col = 0; col < tokens.length; col++) {
+      const token = tokens[col]
 
-      // Check if character is a known board character
-      const isKnownChar = /^[.+XOxo]$/.test(char)
+      // Check if token is a known board character
+      const isKnownToken = /^[.+XOxo]$/.test(token)
 
-      if (validateCharacters && !isKnownChar) {
-        throw new ValidationError(`Invalid board character '${char}' at row ${row + 1}, col ${col + 1}. Valid characters: . or + (empty), X or x (black stone), O or o (white stone)`)
+      if (validateCharacters && !isKnownToken) {
+        throw new ValidationError(`Invalid board token '${token}' at row ${row + 1}, col ${col + 1}. Valid tokens: . or + (empty), X or x (black stone), O or o (white stone)`)
       }
 
       let color = EMPTY
-      if (char === 'X' || char === 'x') {
+      if (token === 'X' || token === 'x') {
         color = BLACK
-      } else if (char === 'O' || char === 'o') {
+      } else if (token === 'O' || token === 'o') {
         color = WHITE
-      } else if (char === '.' || char === '+') {
+      } else if (token === '.' || token === '+') {
         color = EMPTY
       } else {
         // Other mark - collect if validation is off
         if (!validateCharacters) {
-          if (!otherMarks[char]) {
-            otherMarks[char] = []
+          if (!otherMarks[token]) {
+            otherMarks[token] = []
           }
-          otherMarks[char].push(Coordinate(row, col))
+          otherMarks[token].push(Coordinate(row, col))
         }
       }
 
       if (color !== EMPTY) {
         moves.push(Move(Coordinate(row, col), color))
       }
-      col++
     }
   }
 
