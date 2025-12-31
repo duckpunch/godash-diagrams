@@ -691,6 +691,7 @@ export class FreeplayDiagram implements IDiagram {
   private currentMoveIndex: number // -1 means no moves yet
   private isBlackTurn: boolean
   private colorMode: ColorMode
+  private numbered: boolean
 
   constructor(element: Element, lines: string[]) {
     this.element = element
@@ -712,6 +713,10 @@ export class FreeplayDiagram implements IDiagram {
       throw new Error(`Invalid color value '${colorValue}'. Must be 'black', 'white', or 'alternate'`)
     }
     this.colorMode = colorValue as ColorMode
+
+    // Parse numbered option (default to false)
+    const numberedOption = parsedOptions.numbered
+    this.numbered = numberedOption === 'true' || numberedOption === '1'
 
     this.initialBoard = this.parsedBoard.board
     this.currentBoard = this.parsedBoard.board
@@ -804,9 +809,27 @@ export class FreeplayDiagram implements IDiagram {
 
     const { rowCount, columnCount } = this.parsedBoard
 
-    // Determine last move coordinate
+    // Build annotations for move numbers if numbered is enabled
+    const annotations = new Map<string, AnnotationInfo>()
+    if (this.numbered) {
+      let moveNumber = 1
+      for (let i = 0; i <= this.currentMoveIndex; i++) {
+        const entry = this.history[i]
+        if (entry.type === 'move') {
+          const key = `${entry.move.coordinate.x},${entry.move.coordinate.y}`
+          annotations.set(key, {
+            label: String(moveNumber),
+            shape: 'text'
+          })
+          moveNumber++
+        }
+        // Skip pass moves - they don't get numbered
+      }
+    }
+
+    // Determine last move coordinate (only if not numbered - numbers already show last move)
     let lastMove: Coordinate | undefined
-    if (this.currentMoveIndex >= 0) {
+    if (!this.numbered && this.currentMoveIndex >= 0) {
       const lastEntry = this.history[this.currentMoveIndex]
       if (lastEntry.type === 'move') {
         lastMove = lastEntry.move.coordinate
@@ -814,7 +837,7 @@ export class FreeplayDiagram implements IDiagram {
     }
 
     // Generate SVG using current board state
-    const boardSvg = boardToSvg(this.currentBoard, rowCount, columnCount, undefined, lastMove)
+    const boardSvg = boardToSvg(this.currentBoard, rowCount, columnCount, annotations, lastMove)
 
     // Create container with turn indicator, SVG, and buttons
     const turnInfoId = `turn-info-${Math.random().toString(36).substr(2, 9)}`

@@ -26,7 +26,8 @@ area-colors: r=red, b=blue
 
   freeplay: `freeplay
 
-size: 9`,
+size: 9
+numbered: true`,
 
   problem: `problem
 
