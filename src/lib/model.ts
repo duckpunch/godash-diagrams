@@ -91,6 +91,7 @@ export class ProblemDiagram implements IDiagram {
   public sequenceTree: SequenceTree
   public result: ProblemResult
   private currentTree: SequenceTree
+  private currentWildcard: SequenceNode | undefined
   private playedMoves: Move[]
   private currentBoard: Board
   private isBlackTurn: boolean
@@ -174,6 +175,7 @@ export class ProblemDiagram implements IDiagram {
 
     // Initialize play state
     this.currentTree = ImmutableMap<Coordinate, SequenceNode>()
+    this.currentWildcard = undefined
     this.playedMoves = []
     this.currentBoard = board
     this.isBlackTurn = this.toPlay === BLACK
@@ -355,6 +357,9 @@ export class ProblemDiagram implements IDiagram {
 
     // Set current tree to the root of sequence tree
     this.currentTree = this.sequenceTree
+    // Initialize wildcard from root level if present
+    const rootWildcards = Array.from(this.sequenceTree.values()).filter(n => n.wildcardChild)
+    this.currentWildcard = rootWildcards.length > 0 ? rootWildcards[0].wildcardChild : undefined
   }
 
   private applyWildcardToTree(tree: SequenceTree, wildcardNode: SequenceNode): SequenceTree {
@@ -407,17 +412,8 @@ export class ProblemDiagram implements IDiagram {
     let node = this.currentTree.get(coord)
 
     // If not found in explicit children, check for wildcard
-    if (!node) {
-      // Check if any node has a wildcardChild (we need to find one)
-      // Since wildcards apply to "any other move", we check if there's exactly one node with wildcardChild
-      const nodesWithWildcard = Array.from(this.currentTree.values()).filter(n => n.wildcardChild)
-      if (nodesWithWildcard.length > 0) {
-        // Use the wildcard from the first node (there should only be one per level)
-        const wildcardParent = nodesWithWildcard[0]
-        if (wildcardParent.wildcardChild) {
-          node = wildcardParent.wildcardChild
-        }
-      }
+    if (!node && this.currentWildcard) {
+      node = this.currentWildcard
     }
 
     // Play the move regardless of whether it's in the tree
@@ -432,13 +428,15 @@ export class ProblemDiagram implements IDiagram {
       if (this.result !== ProblemResult.Success) {
         this.result = ProblemResult.Failure
       }
-      this.currentTree = ImmutableMap<Coordinate, SequenceNode>() // Clear tree so no further responses
+      this.currentTree = ImmutableMap<Coordinate, SequenceNode>()
+      this.currentWildcard = undefined
       this.render()
       return
     }
 
     // Valid move (either explicit or wildcard) - update tree and result
     this.currentTree = node.children
+    this.currentWildcard = node.wildcardChild
     this.result = node.result
 
     // Re-render
@@ -465,8 +463,9 @@ export class ProblemDiagram implements IDiagram {
     this.currentBoard = addMove(this.currentBoard, move)
     this.isBlackTurn = !this.isBlackTurn
 
-    // Update current tree and result
+    // Update current tree, wildcard, and result
     this.currentTree = node.children
+    this.currentWildcard = node.wildcardChild
     this.result = node.result
 
     // Re-render
@@ -475,6 +474,9 @@ export class ProblemDiagram implements IDiagram {
 
   private reset(): void {
     this.currentTree = this.sequenceTree
+    // Check if any root node has a wildcardChild (for root-level wildcards like "*>A")
+    const rootWildcards = Array.from(this.sequenceTree.values()).filter(n => n.wildcardChild)
+    this.currentWildcard = rootWildcards.length > 0 ? rootWildcards[0].wildcardChild : undefined
     this.playedMoves = []
     this.currentBoard = this.parsedBoard.board
     this.isBlackTurn = this.toPlay === BLACK
