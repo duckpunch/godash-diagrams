@@ -1325,31 +1325,55 @@ export class ReplayDiagram implements IDiagram {
     // Move counter metadata
     const moveCounter = `<div style="color: #616161; font-size: 0.9rem; font-weight: 500;">${currentMove} / ${totalMoves}</div>`
 
-    // Material-styled button bar
+    // Determine next player's turn
+    let nextToPlay: Color
+    if (this.currentMoveIndex < this.moveSequence.length - 1) {
+      // Next move exists in sequence
+      nextToPlay = this.moveSequence[this.currentMoveIndex + 1].color
+    } else {
+      // At the end, next turn would be opposite of last move
+      if (this.currentMoveIndex >= 0) {
+        const lastMove = this.moveSequence[this.currentMoveIndex]
+        nextToPlay = lastMove.color === BLACK ? WHITE : BLACK
+      } else {
+        // At start, use first move's color
+        nextToPlay = this.moveSequence[0].color
+      }
+    }
+
+    // Turn indicator circle
+    const isBlackTurn = nextToPlay === BLACK
+    const stoneColor = isBlackTurn ? '#000000' : '#ffffff'
+    const stoneBorder = isBlackTurn ? 'none' : '2px solid #424242'
+    const turnIndicator = `<div style="width: 28px; height: 28px; border-radius: 50%; background: ${stoneColor}; border: ${stoneBorder};" title="${isBlackTurn ? 'Black' : 'White'} to play"></div>`
+
+    // Material-styled button bar (turn indicator left, buttons right)
     const barStyle = 'background: #f8f8f8; border: 1px solid #9e9e9e; border-radius: 4px; padding: 0.75rem; margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center; max-width: 500px; width: 100%;'
     const buttonGroupStyle = 'display: flex; gap: 0.5rem; align-items: center;'
     const buttonStyle = 'padding: 0.5rem; border: none; border-radius: 4px; background: #e0e0e0; color: #424242; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: background 0.2s; min-width: 36px; height: 36px;'
     const disabledStyle = 'padding: 0.5rem; border: none; border-radius: 4px; background: #f0f0f0; color: #9e9e9e; cursor: not-allowed; display: flex; align-items: center; justify-content: center; min-width: 36px; height: 36px;'
 
-    // Capture bar style
-    const captureBarStyle = 'background: #f8f8f8; border: 1px solid #9e9e9e; border-radius: 4px; padding: 0.75rem; margin-top: 0.5rem; display: flex; gap: 1rem; align-items: center; max-width: 500px; width: 100%;'
+    // Capture bar style (with move counter on right)
+    const captureBarStyle = 'background: #f8f8f8; border: 1px solid #9e9e9e; border-radius: 4px; padding: 0.75rem; margin-top: 0.5rem; display: flex; justify-content: space-between; align-items: center; max-width: 500px; width: 100%;'
+    const captureGroupStyle = 'display: flex; gap: 1rem; align-items: center;'
     const captureItemStyle = 'display: flex; gap: 0.25rem; align-items: center;'
     const captureNumberStyle = 'font-size: 0.9rem; font-weight: 500; color: #424242;'
 
     let output = `<div class="replay-container">`
     output += `<div style="${barStyle}">`
+    output += turnIndicator
     output += `<div style="${buttonGroupStyle}">`
     output += `<button id="${firstButtonId}" style="${this.currentMoveIndex >= 0 ? buttonStyle : disabledStyle}" ${this.currentMoveIndex < 0 ? 'disabled' : ''} title="First">${firstIcon}</button>`
     output += `<button id="${prevButtonId}" style="${this.currentMoveIndex >= 0 ? buttonStyle : disabledStyle}" ${this.currentMoveIndex < 0 ? 'disabled' : ''} title="Previous">${prevIcon}</button>`
     output += `<button id="${nextButtonId}" style="${this.currentMoveIndex < this.moveSequence.length - 1 ? buttonStyle : disabledStyle}" ${this.currentMoveIndex >= this.moveSequence.length - 1 ? 'disabled' : ''} title="Next">${nextIcon}</button>`
     output += `<button id="${lastButtonId}" style="${this.currentMoveIndex < this.moveSequence.length - 1 ? buttonStyle : disabledStyle}" ${this.currentMoveIndex >= this.moveSequence.length - 1 ? 'disabled' : ''} title="Last">${lastIcon}</button>`
     output += `</div>`
-    output += moveCounter
     output += `</div>`
     output += boardSvg
 
-    // Capture count bar (below board)
+    // Capture count bar (below board) with move counter on right
     output += `<div style="${captureBarStyle}">`
+    output += `<div style="${captureGroupStyle}">`
     output += `<div style="${captureItemStyle}">`
     output += whiteCaptureIcon
     output += `<span style="${captureNumberStyle}">${this.whiteCaptured}</span>`
@@ -1358,6 +1382,8 @@ export class ReplayDiagram implements IDiagram {
     output += blackCaptureIcon
     output += `<span style="${captureNumberStyle}">${this.blackCaptured}</span>`
     output += `</div>`
+    output += `</div>`
+    output += moveCounter
     output += `</div>`
 
     output += `</div>`
