@@ -1,5 +1,5 @@
 import type { Color } from 'godash'
-import { Board, Move, Coordinate, BLACK, WHITE, isLegalMove, addMove, difference } from 'godash'
+import { Board, Move, Coordinate, BLACK, WHITE, isLegalMove, addMove, difference, followupKo } from 'godash'
 import { Map as ImmutableMap } from 'immutable'
 import { validateBoard, parseOptions } from './validate'
 import { boardToSvg } from './render'
@@ -236,6 +236,8 @@ export class ProblemDiagram implements IDiagram {
   private isBlackTurn: boolean
   private whiteCaptured: number
   private blackCaptured: number
+  private ignoreKo: boolean
+  private koPoint: Coordinate | null
 
   constructor(element: Element, lines: string[]) {
     this.element = element
@@ -293,6 +295,10 @@ export class ProblemDiagram implements IDiagram {
     }
     this.toPlay = toPlayValue === 'white' ? WHITE : BLACK
 
+    // Parse ignore-ko option (default to false)
+    const ignoreKoOption = parsedOptions['ignore-ko']
+    this.ignoreKo = ignoreKoOption === 'true' || ignoreKoOption === '1'
+
     // Add black and white marks as stones to the board
     let board = parsed.board
     for (const mark of blackMarks) {
@@ -322,6 +328,7 @@ export class ProblemDiagram implements IDiagram {
     this.isBlackTurn = this.toPlay === BLACK
     this.whiteCaptured = 0
     this.blackCaptured = 0
+    this.koPoint = null
 
     // Helper function to validate a move sequence
     const validateSequence = (sequence: string, label: string) => {
@@ -570,6 +577,12 @@ export class ProblemDiagram implements IDiagram {
   }
 
   private handleUserMove(coord: Coordinate): void {
+    // Check if move violates ko rule
+    if (!this.ignoreKo && this.koPoint && coord.equals(this.koPoint)) {
+      // Silently ignore ko violation
+      return
+    }
+
     // Check if this move is in the current tree
     let node = this.currentTree.get(coord)
 
@@ -589,6 +602,11 @@ export class ProblemDiagram implements IDiagram {
     const captures = countCapturesFromDiff(boardBefore, this.currentBoard)
     this.whiteCaptured += captures.whiteCaptured
     this.blackCaptured += captures.blackCaptured
+
+    // Update ko point
+    if (!this.ignoreKo) {
+      this.koPoint = followupKo(boardBefore, move)
+    }
 
     this.isBlackTurn = !this.isBlackTurn
 
@@ -637,6 +655,11 @@ export class ProblemDiagram implements IDiagram {
     this.whiteCaptured += captures.whiteCaptured
     this.blackCaptured += captures.blackCaptured
 
+    // Update ko point
+    if (!this.ignoreKo) {
+      this.koPoint = followupKo(boardBefore, move)
+    }
+
     this.isBlackTurn = !this.isBlackTurn
 
     // Update current tree, wildcard, and result
@@ -659,6 +682,7 @@ export class ProblemDiagram implements IDiagram {
     this.result = ProblemResult.Incomplete
     this.whiteCaptured = 0
     this.blackCaptured = 0
+    this.koPoint = null
     this.render()
   }
 
@@ -813,6 +837,8 @@ export class FreeplayDiagram implements IDiagram {
   private numbered: boolean
   private whiteCaptured: number
   private blackCaptured: number
+  private ignoreKo: boolean
+  private koPoint: Coordinate | null
 
   constructor(element: Element, lines: string[]) {
     this.element = element
@@ -839,6 +865,10 @@ export class FreeplayDiagram implements IDiagram {
     const numberedOption = parsedOptions.numbered
     this.numbered = numberedOption === 'true' || numberedOption === '1'
 
+    // Parse ignore-ko option (default to false)
+    const ignoreKoOption = parsedOptions['ignore-ko']
+    this.ignoreKo = ignoreKoOption === 'true' || ignoreKoOption === '1'
+
     this.initialBoard = this.parsedBoard.board
     this.currentBoard = this.parsedBoard.board
     this.history = []
@@ -847,6 +877,7 @@ export class FreeplayDiagram implements IDiagram {
     this.isBlackTurn = this.colorMode !== 'white'
     this.whiteCaptured = 0
     this.blackCaptured = 0
+    this.koPoint = null
   }
 
   private rebuildBoard(): void {
@@ -857,22 +888,36 @@ export class FreeplayDiagram implements IDiagram {
     this.whiteCaptured = 0
     this.blackCaptured = 0
 
+    // Track board before last move for ko calculation
+    let boardBeforeLastMove = this.initialBoard
+    let lastMove: Move | null = null
+
     // Apply moves up to currentMoveIndex
     for (let i = 0; i <= this.currentMoveIndex; i++) {
       const entry = this.history[i]
       if (entry.type === 'move') {
-        const boardBefore = board
+        boardBeforeLastMove = board
+        lastMove = entry.move
         board = addMove(board, entry.move)
 
         // Count captures
-        const captures = countCapturesFromDiff(boardBefore, board)
+        const captures = countCapturesFromDiff(boardBeforeLastMove, board)
         this.whiteCaptured += captures.whiteCaptured
         this.blackCaptured += captures.blackCaptured
+      } else {
+        // Pass move clears ko point
+        lastMove = null
       }
-      // Pass moves don't change the board
     }
 
     this.currentBoard = board
+
+    // Calculate ko point from last move
+    if (!this.ignoreKo && lastMove) {
+      this.koPoint = followupKo(boardBeforeLastMove, lastMove)
+    } else {
+      this.koPoint = null
+    }
 
     // Update whose turn it is based on color mode and history
     if (this.colorMode === 'black') {
@@ -936,6 +981,7 @@ export class FreeplayDiagram implements IDiagram {
     }
     this.whiteCaptured = 0
     this.blackCaptured = 0
+    this.koPoint = null
     this.render()
   }
 
@@ -1074,6 +1120,12 @@ export class FreeplayDiagram implements IDiagram {
           const coordinate = Coordinate(row, col)
           const color = this.isBlackTurn ? BLACK : WHITE
           const move = Move(coordinate, color)
+
+          // Check if move violates ko rule
+          if (!this.ignoreKo && this.koPoint && coordinate.equals(this.koPoint)) {
+            // Silently ignore ko violation
+            return
+          }
 
           // Check if move is legal
           if (isLegalMove(this.currentBoard, move)) {
