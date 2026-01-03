@@ -641,19 +641,27 @@ export class ProblemDiagram implements IDiagram {
     const resetButtonId = `reset-${Math.random().toString(36).substr(2, 9)}`
     const resetIcon = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11"/></svg>'
 
-    // Turn indicator circle (only show when game is in progress)
-    let turnIndicator = ''
-    if (this.result === ProblemResult.Incomplete) {
-      const isBlackTurn = this.isBlackTurn
-      const stoneColor = isBlackTurn ? '#000000' : '#ffffff'
-      const stoneBorder = isBlackTurn ? 'none' : '2px solid #424242'
-      turnIndicator = `<div style="width: 28px; height: 28px; border-radius: 50%; background: ${stoneColor}; border: ${stoneBorder}; margin-right: 0.5rem;" title="${isBlackTurn ? 'Black' : 'White'} to play"></div>`
-    }
-
     // SVG icons for result indicator
     const checkIcon = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2e7d32" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>'
     const xIcon = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#c62828" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>'
-    const ellipsisIcon = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#616161" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>'
+
+    // Left indicator: turn indicator when in progress, result icon when complete
+    let leftIndicator = ''
+    if (this.result === ProblemResult.Incomplete) {
+      // Show turn indicator when game is in progress
+      const isBlackTurn = this.isBlackTurn
+      const stoneColor = isBlackTurn ? '#000000' : '#ffffff'
+      const stoneBorder = isBlackTurn ? 'none' : '2px solid #424242'
+      leftIndicator = `<div style="width: 28px; height: 28px; border-radius: 50%; background: ${stoneColor}; border: ${stoneBorder};" title="${isBlackTurn ? 'Black' : 'White'} to play"></div>`
+    } else if (this.result === ProblemResult.Success) {
+      // Show check icon when successful
+      const iconStyle = 'display: flex; align-items: center; justify-content: center; min-width: 28px; height: 28px;'
+      leftIndicator = `<div style="${iconStyle}">${checkIcon}</div>`
+    } else if (this.result === ProblemResult.Failure) {
+      // Show x icon when failed
+      const iconStyle = 'display: flex; align-items: center; justify-content: center; min-width: 28px; height: 28px;'
+      leftIndicator = `<div style="${iconStyle}">${xIcon}</div>`
+    }
 
     // Dynamic bar styling based on result
     let barBackground = '#f8f8f8'
@@ -674,19 +682,7 @@ export class ProblemDiagram implements IDiagram {
     }
 
     const barStyle = `background: ${barBackground}; border: 1px solid ${barBorderColor}; border-radius: 4px; padding: 0.75rem; margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center; max-width: 500px; width: 100%;`
-    const buttonGroupStyle = 'display: flex; gap: 0.5rem; align-items: center;'
     const buttonStyle = `padding: 0.5rem; border: none; border-radius: 4px; background: ${buttonBackground}; color: ${buttonColor}; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: background 0.2s; min-width: 36px; height: 36px;`
-    const iconStyle = 'display: flex; align-items: center; justify-content: center; min-width: 36px; height: 36px;'
-
-    // Result indicator metadata
-    let resultIndicator = ''
-    if (this.result === ProblemResult.Success) {
-      resultIndicator = `<div style="${iconStyle}">${checkIcon}</div>`
-    } else if (this.result === ProblemResult.Failure) {
-      resultIndicator = `<div style="${iconStyle}">${xIcon}</div>`
-    } else {
-      resultIndicator = `<div style="${iconStyle}">${ellipsisIcon}</div>`
-    }
 
     // Generate SVG using current board state
     const boardSvg = boardToSvg(this.currentBoard, rowCount, columnCount, undefined, lastMove)
@@ -694,11 +690,8 @@ export class ProblemDiagram implements IDiagram {
     // Render
     let output = `<div class="problem-container">`
     output += `<div style="${barStyle}">`
-    output += `<div style="${buttonGroupStyle}">`
-    output += turnIndicator
+    output += leftIndicator
     output += `<button id="${resetButtonId}" style="${buttonStyle}" title="Reset">${resetIcon}</button>`
-    output += `</div>`
-    output += resultIndicator
     output += `</div>`
     output += boardSvg
     output += `</div>`
