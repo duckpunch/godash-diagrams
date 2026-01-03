@@ -939,6 +939,14 @@ export class FreeplayDiagram implements IDiagram {
     const passIcon = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.1 2.182a10 10 0 0 1 3.8 0"/><path d="M13.9 21.818a10 10 0 0 1-3.8 0"/><path d="M17.609 3.721a10 10 0 0 1 2.69 2.7"/><path d="M2.182 13.9a10 10 0 0 1 0-3.8"/><path d="M20.279 17.609a10 10 0 0 1-2.7 2.69"/><path d="M21.818 10.1a10 10 0 0 1 0 3.8"/><path d="M3.721 6.391a10 10 0 0 1 2.7-2.69"/><path d="M6.391 20.279a10 10 0 0 1-2.69-2.7"/></svg>'
     const resetIcon = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11"/></svg>'
 
+    // Capture count icons (stone with red X)
+    const whiteCaptureIcon = '<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="8" fill="white" stroke="black" stroke-width="1.5"/><line x1="3" y1="3" x2="21" y2="21" stroke="red" stroke-width="2" stroke-linecap="round"/><line x1="21" y1="3" x2="3" y2="21" stroke="red" stroke-width="2" stroke-linecap="round"/></svg>'
+    const blackCaptureIcon = '<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="8" fill="black" stroke="black" stroke-width="1.5"/><line x1="3" y1="3" x2="21" y2="21" stroke="red" stroke-width="2" stroke-linecap="round"/><line x1="21" y1="3" x2="3" y2="21" stroke="red" stroke-width="2" stroke-linecap="round"/></svg>'
+
+    // Capture counts (hardcoded to 0 for now)
+    const whiteCaptureCount = 0
+    const blackCaptureCount = 0
+
     // Turn indicator circle
     const stoneColor = this.isBlackTurn ? '#000000' : '#ffffff'
     const stoneBorder = this.isBlackTurn ? 'none' : '2px solid #424242'
@@ -954,6 +962,11 @@ export class FreeplayDiagram implements IDiagram {
     const buttonStyle = 'padding: 0.5rem; border: none; border-radius: 4px; background: #e0e0e0; color: #424242; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: background 0.2s; min-width: 36px; height: 36px;'
     const disabledStyle = 'padding: 0.5rem; border: none; border-radius: 4px; background: #f0f0f0; color: #9e9e9e; cursor: not-allowed; display: flex; align-items: center; justify-content: center; min-width: 36px; height: 36px;'
 
+    // Capture bar style
+    const captureBarStyle = 'background: #f8f8f8; border: 1px solid #9e9e9e; border-radius: 4px; padding: 0.75rem; margin-top: 0.5rem; display: flex; gap: 1rem; align-items: center; max-width: 500px; width: 100%;'
+    const captureItemStyle = 'display: flex; gap: 0.25rem; align-items: center;'
+    const captureNumberStyle = 'font-size: 0.9rem; font-weight: 500; color: #424242;'
+
     let output = `<div class="freeplay-container">`
     output += `<div style="${barStyle}">`
     output += `<div style="${buttonGroupStyle}">`
@@ -966,6 +979,19 @@ export class FreeplayDiagram implements IDiagram {
     output += moveCounter
     output += `</div>`
     output += boardSvg
+
+    // Capture count bar (below board)
+    output += `<div style="${captureBarStyle}">`
+    output += `<div style="${captureItemStyle}">`
+    output += whiteCaptureIcon
+    output += `<span style="${captureNumberStyle}">${whiteCaptureCount}</span>`
+    output += `</div>`
+    output += `<div style="${captureItemStyle}">`
+    output += blackCaptureIcon
+    output += `<span style="${captureNumberStyle}">${blackCaptureCount}</span>`
+    output += `</div>`
+    output += `</div>`
+
     output += `</div>`
 
     element.innerHTML = output
@@ -1216,6 +1242,14 @@ export class ReplayDiagram implements IDiagram {
     // Generate SVG
     const boardSvg = boardToSvg(this.currentBoard, rowCount, columnCount, annotations, lastMove)
 
+    // Capture count icons (stone with red X)
+    const whiteCaptureIcon = '<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="8" fill="white" stroke="black" stroke-width="1.5"/><line x1="3" y1="3" x2="21" y2="21" stroke="red" stroke-width="2" stroke-linecap="round"/><line x1="21" y1="3" x2="3" y2="21" stroke="red" stroke-width="2" stroke-linecap="round"/></svg>'
+    const blackCaptureIcon = '<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="8" fill="black" stroke="black" stroke-width="1.5"/><line x1="3" y1="3" x2="21" y2="21" stroke="red" stroke-width="2" stroke-linecap="round"/><line x1="21" y1="3" x2="3" y2="21" stroke="red" stroke-width="2" stroke-linecap="round"/></svg>'
+
+    // Capture counts (hardcoded to 0 for now)
+    const whiteCaptureCount = 0
+    const blackCaptureCount = 0
+
     // Create UI with move counter and navigation buttons
     const firstButtonId = `first-${Math.random().toString(36).substr(2, 9)}`
     const prevButtonId = `prev-${Math.random().toString(36).substr(2, 9)}`
@@ -1241,6 +1275,11 @@ export class ReplayDiagram implements IDiagram {
     const buttonStyle = 'padding: 0.5rem; border: none; border-radius: 4px; background: #e0e0e0; color: #424242; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: background 0.2s; min-width: 36px; height: 36px;'
     const disabledStyle = 'padding: 0.5rem; border: none; border-radius: 4px; background: #f0f0f0; color: #9e9e9e; cursor: not-allowed; display: flex; align-items: center; justify-content: center; min-width: 36px; height: 36px;'
 
+    // Capture bar style
+    const captureBarStyle = 'background: #f8f8f8; border: 1px solid #9e9e9e; border-radius: 4px; padding: 0.75rem; margin-top: 0.5rem; display: flex; gap: 1rem; align-items: center; max-width: 500px; width: 100%;'
+    const captureItemStyle = 'display: flex; gap: 0.25rem; align-items: center;'
+    const captureNumberStyle = 'font-size: 0.9rem; font-weight: 500; color: #424242;'
+
     let output = `<div class="replay-container">`
     output += `<div style="${barStyle}">`
     output += `<div style="${buttonGroupStyle}">`
@@ -1252,6 +1291,19 @@ export class ReplayDiagram implements IDiagram {
     output += moveCounter
     output += `</div>`
     output += boardSvg
+
+    // Capture count bar (below board)
+    output += `<div style="${captureBarStyle}">`
+    output += `<div style="${captureItemStyle}">`
+    output += whiteCaptureIcon
+    output += `<span style="${captureNumberStyle}">${whiteCaptureCount}</span>`
+    output += `</div>`
+    output += `<div style="${captureItemStyle}">`
+    output += blackCaptureIcon
+    output += `<span style="${captureNumberStyle}">${blackCaptureCount}</span>`
+    output += `</div>`
+    output += `</div>`
+
     output += `</div>`
 
     element.innerHTML = output
