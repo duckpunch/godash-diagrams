@@ -1,5 +1,5 @@
 import type { Color } from 'godash'
-import { Board, Move, Coordinate, BLACK, WHITE, isLegalMove, addMove } from 'godash'
+import { Board, Move, Coordinate, BLACK, WHITE, isLegalMove, addMove, difference } from 'godash'
 import { Map as ImmutableMap } from 'immutable'
 import { validateBoard, parseOptions } from './validate'
 import { boardToSvg } from './render'
@@ -40,6 +40,21 @@ export type AnnotationShape = 'text' | 'triangle' | 'square' | 'circle' | 'x'
 export interface AnnotationInfo {
   label: string
   shape: AnnotationShape
+}
+
+// Helper function to count captures when playing a move
+function countCapturesFromDiff(boardBefore: Board, boardAfter: Board): { whiteCaptured: number, blackCaptured: number } {
+  const diff = difference(boardBefore, boardAfter)
+  let whiteCaptured = 0
+  let blackCaptured = 0
+
+  diff.forEach((entry) => {
+    const color = entry.get(1) as Color
+    if (color === WHITE) whiteCaptured++
+    else if (color === BLACK) blackCaptured++
+  })
+
+  return { whiteCaptured, blackCaptured }
 }
 
 export class StaticDiagram implements IDiagram {
@@ -219,6 +234,8 @@ export class ProblemDiagram implements IDiagram {
   private playedMoves: Move[]
   private currentBoard: Board
   private isBlackTurn: boolean
+  private whiteCaptured: number
+  private blackCaptured: number
 
   constructor(element: Element, lines: string[]) {
     this.element = element
@@ -303,6 +320,8 @@ export class ProblemDiagram implements IDiagram {
     this.playedMoves = []
     this.currentBoard = board
     this.isBlackTurn = this.toPlay === BLACK
+    this.whiteCaptured = 0
+    this.blackCaptured = 0
 
     // Helper function to validate a move sequence
     const validateSequence = (sequence: string, label: string) => {
@@ -563,7 +582,14 @@ export class ProblemDiagram implements IDiagram {
     const currentColor = this.isBlackTurn ? BLACK : WHITE
     const move = Move(coord, currentColor)
     this.playedMoves.push(move)
+    const boardBefore = this.currentBoard
     this.currentBoard = addMove(this.currentBoard, move)
+
+    // Count captures
+    const captures = countCapturesFromDiff(boardBefore, this.currentBoard)
+    this.whiteCaptured += captures.whiteCaptured
+    this.blackCaptured += captures.blackCaptured
+
     this.isBlackTurn = !this.isBlackTurn
 
     if (!node) {
@@ -603,7 +629,14 @@ export class ProblemDiagram implements IDiagram {
     const currentColor = this.isBlackTurn ? BLACK : WHITE
     const move = Move(coord, currentColor)
     this.playedMoves.push(move)
+    const boardBefore = this.currentBoard
     this.currentBoard = addMove(this.currentBoard, move)
+
+    // Count captures
+    const captures = countCapturesFromDiff(boardBefore, this.currentBoard)
+    this.whiteCaptured += captures.whiteCaptured
+    this.blackCaptured += captures.blackCaptured
+
     this.isBlackTurn = !this.isBlackTurn
 
     // Update current tree, wildcard, and result
@@ -624,6 +657,8 @@ export class ProblemDiagram implements IDiagram {
     this.currentBoard = this.parsedBoard.board
     this.isBlackTurn = this.toPlay === BLACK
     this.result = ProblemResult.Incomplete
+    this.whiteCaptured = 0
+    this.blackCaptured = 0
     this.render()
   }
 
@@ -691,10 +726,6 @@ export class ProblemDiagram implements IDiagram {
     const whiteCaptureIcon = '<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="8" fill="white" stroke="black" stroke-width="1.5"/><line x1="3" y1="3" x2="21" y2="21" stroke="red" stroke-width="2" stroke-linecap="round"/><line x1="21" y1="3" x2="3" y2="21" stroke="red" stroke-width="2" stroke-linecap="round"/></svg>'
     const blackCaptureIcon = '<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="8" fill="black" stroke="black" stroke-width="1.5"/><line x1="3" y1="3" x2="21" y2="21" stroke="red" stroke-width="2" stroke-linecap="round"/><line x1="21" y1="3" x2="3" y2="21" stroke="red" stroke-width="2" stroke-linecap="round"/></svg>'
 
-    // Capture counts (hardcoded to 0 for now)
-    const whiteCaptureCount = 0
-    const blackCaptureCount = 0
-
     // Capture bar style (same as button bar but no dynamic colors)
     const captureBarStyle = 'background: #f8f8f8; border: 1px solid #9e9e9e; border-radius: 4px; padding: 0.75rem; margin-bottom: 0.5rem; display: flex; gap: 1rem; align-items: center; max-width: 500px; width: 100%;'
     const captureItemStyle = 'display: flex; gap: 0.25rem; align-items: center;'
@@ -712,11 +743,11 @@ export class ProblemDiagram implements IDiagram {
     output += `<div style="${captureBarStyle}">`
     output += `<div style="${captureItemStyle}">`
     output += whiteCaptureIcon
-    output += `<span style="${captureNumberStyle}">${whiteCaptureCount}</span>`
+    output += `<span style="${captureNumberStyle}">${this.whiteCaptured}</span>`
     output += `</div>`
     output += `<div style="${captureItemStyle}">`
     output += blackCaptureIcon
-    output += `<span style="${captureNumberStyle}">${blackCaptureCount}</span>`
+    output += `<span style="${captureNumberStyle}">${this.blackCaptured}</span>`
     output += `</div>`
     output += `</div>`
 
@@ -780,6 +811,8 @@ export class FreeplayDiagram implements IDiagram {
   private isBlackTurn: boolean
   private colorMode: ColorMode
   private numbered: boolean
+  private whiteCaptured: number
+  private blackCaptured: number
 
   constructor(element: Element, lines: string[]) {
     this.element = element
@@ -812,17 +845,29 @@ export class FreeplayDiagram implements IDiagram {
     this.currentMoveIndex = -1
     // Set initial turn based on color mode
     this.isBlackTurn = this.colorMode !== 'white'
+    this.whiteCaptured = 0
+    this.blackCaptured = 0
   }
 
   private rebuildBoard(): void {
     // Start with initial board
     let board = this.initialBoard
 
+    // Reset capture counts
+    this.whiteCaptured = 0
+    this.blackCaptured = 0
+
     // Apply moves up to currentMoveIndex
     for (let i = 0; i <= this.currentMoveIndex; i++) {
       const entry = this.history[i]
       if (entry.type === 'move') {
+        const boardBefore = board
         board = addMove(board, entry.move)
+
+        // Count captures
+        const captures = countCapturesFromDiff(boardBefore, board)
+        this.whiteCaptured += captures.whiteCaptured
+        this.blackCaptured += captures.blackCaptured
       }
       // Pass moves don't change the board
     }
@@ -889,6 +934,8 @@ export class FreeplayDiagram implements IDiagram {
     } else {
       this.isBlackTurn = true // For both 'black' and 'alternate'
     }
+    this.whiteCaptured = 0
+    this.blackCaptured = 0
     this.render()
   }
 
@@ -943,10 +990,6 @@ export class FreeplayDiagram implements IDiagram {
     const whiteCaptureIcon = '<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="8" fill="white" stroke="black" stroke-width="1.5"/><line x1="3" y1="3" x2="21" y2="21" stroke="red" stroke-width="2" stroke-linecap="round"/><line x1="21" y1="3" x2="3" y2="21" stroke="red" stroke-width="2" stroke-linecap="round"/></svg>'
     const blackCaptureIcon = '<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="8" fill="black" stroke="black" stroke-width="1.5"/><line x1="3" y1="3" x2="21" y2="21" stroke="red" stroke-width="2" stroke-linecap="round"/><line x1="21" y1="3" x2="3" y2="21" stroke="red" stroke-width="2" stroke-linecap="round"/></svg>'
 
-    // Capture counts (hardcoded to 0 for now)
-    const whiteCaptureCount = 0
-    const blackCaptureCount = 0
-
     // Turn indicator circle
     const stoneColor = this.isBlackTurn ? '#000000' : '#ffffff'
     const stoneBorder = this.isBlackTurn ? 'none' : '2px solid #424242'
@@ -984,11 +1027,11 @@ export class FreeplayDiagram implements IDiagram {
     output += `<div style="${captureBarStyle}">`
     output += `<div style="${captureItemStyle}">`
     output += whiteCaptureIcon
-    output += `<span style="${captureNumberStyle}">${whiteCaptureCount}</span>`
+    output += `<span style="${captureNumberStyle}">${this.whiteCaptured}</span>`
     output += `</div>`
     output += `<div style="${captureItemStyle}">`
     output += blackCaptureIcon
-    output += `<span style="${captureNumberStyle}">${blackCaptureCount}</span>`
+    output += `<span style="${captureNumberStyle}">${this.blackCaptured}</span>`
     output += `</div>`
     output += `</div>`
 
@@ -1077,6 +1120,8 @@ export class ReplayDiagram implements IDiagram {
   private currentBoard: Board
   private initialBoard: Board
   private showNumbers: boolean
+  private whiteCaptured: number
+  private blackCaptured: number
 
   constructor(element: Element, lines: string[]) {
     this.element = element
@@ -1085,6 +1130,8 @@ export class ReplayDiagram implements IDiagram {
     const parsed = validateBoard(lines, { allowEmpty: false, validateCharacters: false })
     this.parsedBoard = parsed
     this.initialBoard = parsed.board
+    this.whiteCaptured = 0
+    this.blackCaptured = 0
 
     // Parse options
     const parsedOptions = parseOptions(lines, parsed.configStartIndex)
@@ -1180,10 +1227,20 @@ export class ReplayDiagram implements IDiagram {
   private rebuildBoard(): void {
     let board = this.initialBoard
 
+    // Reset capture counts
+    this.whiteCaptured = 0
+    this.blackCaptured = 0
+
     // Apply moves up to currentMoveIndex
     for (let i = 0; i <= this.currentMoveIndex; i++) {
       const move = this.moveSequence[i]
+      const boardBefore = board
       board = addMove(board, Move(move.coordinate, move.color))
+
+      // Count captures
+      const captures = countCapturesFromDiff(boardBefore, board)
+      this.whiteCaptured += captures.whiteCaptured
+      this.blackCaptured += captures.blackCaptured
     }
 
     this.currentBoard = board
@@ -1246,10 +1303,6 @@ export class ReplayDiagram implements IDiagram {
     const whiteCaptureIcon = '<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="8" fill="white" stroke="black" stroke-width="1.5"/><line x1="3" y1="3" x2="21" y2="21" stroke="red" stroke-width="2" stroke-linecap="round"/><line x1="21" y1="3" x2="3" y2="21" stroke="red" stroke-width="2" stroke-linecap="round"/></svg>'
     const blackCaptureIcon = '<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="8" fill="black" stroke="black" stroke-width="1.5"/><line x1="3" y1="3" x2="21" y2="21" stroke="red" stroke-width="2" stroke-linecap="round"/><line x1="21" y1="3" x2="3" y2="21" stroke="red" stroke-width="2" stroke-linecap="round"/></svg>'
 
-    // Capture counts (hardcoded to 0 for now)
-    const whiteCaptureCount = 0
-    const blackCaptureCount = 0
-
     // Create UI with move counter and navigation buttons
     const firstButtonId = `first-${Math.random().toString(36).substr(2, 9)}`
     const prevButtonId = `prev-${Math.random().toString(36).substr(2, 9)}`
@@ -1296,11 +1349,11 @@ export class ReplayDiagram implements IDiagram {
     output += `<div style="${captureBarStyle}">`
     output += `<div style="${captureItemStyle}">`
     output += whiteCaptureIcon
-    output += `<span style="${captureNumberStyle}">${whiteCaptureCount}</span>`
+    output += `<span style="${captureNumberStyle}">${this.whiteCaptured}</span>`
     output += `</div>`
     output += `<div style="${captureItemStyle}">`
     output += blackCaptureIcon
-    output += `<span style="${captureNumberStyle}">${blackCaptureCount}</span>`
+    output += `<span style="${captureNumberStyle}">${this.blackCaptured}</span>`
     output += `</div>`
     output += `</div>`
 
