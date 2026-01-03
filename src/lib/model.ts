@@ -637,12 +637,6 @@ export class ProblemDiagram implements IDiagram {
       lastMove = this.playedMoves[this.playedMoves.length - 1].coordinate
     }
 
-    // Generate SVG using current board state
-    const boardSvg = boardToSvg(this.currentBoard, rowCount, columnCount, undefined, lastMove)
-
-    // Render
-    let output = boardSvg
-
     // Material-styled button bar with result label
     const resetButtonId = `reset-${Math.random().toString(36).substr(2, 9)}`
     const resetIcon = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11"/></svg>'
@@ -679,7 +673,7 @@ export class ProblemDiagram implements IDiagram {
       buttonColor = '#c62828'  // Red
     }
 
-    const barStyle = `background: ${barBackground}; border-left: 4px solid ${barBorderColor}; border-radius: 0 4px 4px 0; padding: 0.75rem; margin-top: 0.5rem; display: flex; justify-content: space-between; align-items: center; max-width: 500px; width: 100%;`
+    const barStyle = `background: ${barBackground}; border-left: 4px solid ${barBorderColor}; border-radius: 0 4px 4px 0; padding: 0.75rem; margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center; max-width: 500px; width: 100%;`
     const buttonGroupStyle = 'display: flex; gap: 0.5rem; align-items: center;'
     const buttonStyle = `padding: 0.5rem; border: none; border-radius: 4px; background: ${buttonBackground}; color: ${buttonColor}; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: background 0.2s; min-width: 36px; height: 36px;`
     const iconStyle = 'display: flex; align-items: center; justify-content: center; min-width: 36px; height: 36px;'
@@ -694,13 +688,18 @@ export class ProblemDiagram implements IDiagram {
       resultIndicator = `<div style="${iconStyle}">${ellipsisIcon}</div>`
     }
 
-    output += `<div style="${barStyle}">`
+    // Generate SVG using current board state
+    const boardSvg = boardToSvg(this.currentBoard, rowCount, columnCount, undefined, lastMove)
+
+    // Render
+    let output = `<div style="${barStyle}">`
     output += `<div style="${buttonGroupStyle}">`
     output += turnIndicator
     output += `<button id="${resetButtonId}" style="${buttonStyle}" title="Reset">${resetIcon}</button>`
     output += `</div>`
     output += resultIndicator
     output += `</div>`
+    output += boardSvg
 
     element.innerHTML = output
 
@@ -911,9 +910,6 @@ export class FreeplayDiagram implements IDiagram {
     const passButtonId = `pass-${Math.random().toString(36).substr(2, 9)}`
     const resetButtonId = `reset-${Math.random().toString(36).substr(2, 9)}`
 
-    let output = `<div class="freeplay-container">`
-    output += boardSvg
-
     // SVG icons
     const undoIcon = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>'
     const redoIcon = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>'
@@ -930,11 +926,12 @@ export class FreeplayDiagram implements IDiagram {
     const moveCounter = `<div style="color: #616161; font-size: 0.9rem; font-weight: 500;">${moveCount}</div>`
 
     // Material-styled button bar (admonition style)
-    const barStyle = 'background: #f8f8f8; border-left: 4px solid #9e9e9e; border-radius: 0 4px 4px 0; padding: 0.75rem; margin-top: 0.5rem; display: flex; justify-content: space-between; align-items: center; max-width: 500px; width: 100%;'
+    const barStyle = 'background: #f8f8f8; border-left: 4px solid #9e9e9e; border-radius: 0 4px 4px 0; padding: 0.75rem; margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center; max-width: 500px; width: 100%;'
     const buttonGroupStyle = 'display: flex; gap: 0.5rem; align-items: center;'
     const buttonStyle = 'padding: 0.5rem; border: none; border-radius: 4px; background: #e0e0e0; color: #424242; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: background 0.2s; min-width: 36px; height: 36px;'
     const disabledStyle = 'padding: 0.5rem; border: none; border-radius: 4px; background: #f0f0f0; color: #9e9e9e; cursor: not-allowed; display: flex; align-items: center; justify-content: center; min-width: 36px; height: 36px;'
 
+    let output = `<div class="freeplay-container">`
     output += `<div style="${barStyle}">`
     output += `<div style="${buttonGroupStyle}">`
     output += turnIndicator
@@ -945,7 +942,7 @@ export class FreeplayDiagram implements IDiagram {
     output += `</div>`
     output += moveCounter
     output += `</div>`
-
+    output += boardSvg
     output += `</div>`
 
     element.innerHTML = output
@@ -1210,18 +1207,16 @@ export class ReplayDiagram implements IDiagram {
     const currentMove = this.currentMoveIndex + 1  // Convert from index to move number
     const totalMoves = this.moveSequence.length
 
-    let output = `<div class="replay-container">`
-    output += boardSvg
-
     // Move counter metadata
     const moveCounter = `<div style="color: #616161; font-size: 0.9rem; font-weight: 500;">${currentMove} / ${totalMoves}</div>`
 
     // Material-styled button bar (admonition style)
-    const barStyle = 'background: #f8f8f8; border-left: 4px solid #9e9e9e; border-radius: 0 4px 4px 0; padding: 0.75rem; margin-top: 0.5rem; display: flex; justify-content: space-between; align-items: center; max-width: 500px; width: 100%;'
+    const barStyle = 'background: #f8f8f8; border-left: 4px solid #9e9e9e; border-radius: 0 4px 4px 0; padding: 0.75rem; margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center; max-width: 500px; width: 100%;'
     const buttonGroupStyle = 'display: flex; gap: 0.5rem; align-items: center;'
     const buttonStyle = 'padding: 0.5rem; border: none; border-radius: 4px; background: #e0e0e0; color: #424242; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: background 0.2s; min-width: 36px; height: 36px;'
     const disabledStyle = 'padding: 0.5rem; border: none; border-radius: 4px; background: #f0f0f0; color: #9e9e9e; cursor: not-allowed; display: flex; align-items: center; justify-content: center; min-width: 36px; height: 36px;'
 
+    let output = `<div class="replay-container">`
     output += `<div style="${barStyle}">`
     output += `<div style="${buttonGroupStyle}">`
     output += `<button id="${firstButtonId}" style="${this.currentMoveIndex >= 0 ? buttonStyle : disabledStyle}" ${this.currentMoveIndex < 0 ? 'disabled' : ''} title="First">${firstIcon}</button>`
@@ -1231,7 +1226,7 @@ export class ReplayDiagram implements IDiagram {
     output += `</div>`
     output += moveCounter
     output += `</div>`
-
+    output += boardSvg
     output += `</div>`
 
     element.innerHTML = output
