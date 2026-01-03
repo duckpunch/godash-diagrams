@@ -28,7 +28,7 @@ export function boardToSvg(
   const svgWidth = (fullColumns ? actualColumnCount - 1 : actualColumnCount) * cellSize + margin * 2
   const svgHeight = (fullRows ? actualRowCount - 1 : actualRowCount) * cellSize + margin * 2
 
-  let svg = `<svg viewBox="0 0 ${svgWidth} ${svgHeight}" style="max-width: 500px; width: 100%; height: auto;" xmlns="http://www.w3.org/2000/svg">`
+  let svg = `<svg class="godash-board" viewBox="0 0 ${svgWidth} ${svgHeight}" style="max-width: 500px; width: 100%; height: auto;" xmlns="http://www.w3.org/2000/svg">`
 
   // Background
   svg += `<rect width="${svgWidth}" height="${svgHeight}" fill="#dcb35c"/>`

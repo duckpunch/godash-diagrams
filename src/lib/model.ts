@@ -673,7 +673,7 @@ export class ProblemDiagram implements IDiagram {
       buttonColor = '#c62828'  // Red
     }
 
-    const barStyle = `background: ${barBackground}; border-left: 4px solid ${barBorderColor}; border-radius: 0 4px 4px 0; padding: 0.75rem; margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center; max-width: 500px; width: 100%;`
+    const barStyle = `background: ${barBackground}; border: 1px solid ${barBorderColor}; border-radius: 4px; padding: 0.75rem; margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center; max-width: 500px; width: 100%;`
     const buttonGroupStyle = 'display: flex; gap: 0.5rem; align-items: center;'
     const buttonStyle = `padding: 0.5rem; border: none; border-radius: 4px; background: ${buttonBackground}; color: ${buttonColor}; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: background 0.2s; min-width: 36px; height: 36px;`
     const iconStyle = 'display: flex; align-items: center; justify-content: center; min-width: 36px; height: 36px;'
@@ -692,7 +692,8 @@ export class ProblemDiagram implements IDiagram {
     const boardSvg = boardToSvg(this.currentBoard, rowCount, columnCount, undefined, lastMove)
 
     // Render
-    let output = `<div style="${barStyle}">`
+    let output = `<div class="problem-container">`
+    output += `<div style="${barStyle}">`
     output += `<div style="${buttonGroupStyle}">`
     output += turnIndicator
     output += `<button id="${resetButtonId}" style="${buttonStyle}" title="Reset">${resetIcon}</button>`
@@ -700,11 +701,12 @@ export class ProblemDiagram implements IDiagram {
     output += resultIndicator
     output += `</div>`
     output += boardSvg
+    output += `</div>`
 
     element.innerHTML = output
 
     // Add click handler to SVG
-    const svg = element.querySelector('svg')
+    const svg = element.querySelector('svg.godash-board') as SVGSVGElement | null
     if (svg) {
       svg.style.cursor = 'pointer'
 
@@ -715,7 +717,9 @@ export class ProblemDiagram implements IDiagram {
         const pt = svg.createSVGPoint()
         pt.x = mouseEvent.clientX
         pt.y = mouseEvent.clientY
-        const svgPt = pt.matrixTransform(svg.getScreenCTM()!.inverse())
+        const ctm = svg.getScreenCTM()
+        if (!ctm) return
+        const svgPt = pt.matrixTransform(ctm.inverse())
 
         // Convert to board coordinates
         const cellSize = 30
@@ -925,8 +929,8 @@ export class FreeplayDiagram implements IDiagram {
     const moveCount = this.currentMoveIndex + 1  // Total moves played
     const moveCounter = `<div style="color: #616161; font-size: 0.9rem; font-weight: 500;">${moveCount}</div>`
 
-    // Material-styled button bar (admonition style)
-    const barStyle = 'background: #f8f8f8; border-left: 4px solid #9e9e9e; border-radius: 0 4px 4px 0; padding: 0.75rem; margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center; max-width: 500px; width: 100%;'
+    // Material-styled button bar
+    const barStyle = 'background: #f8f8f8; border: 1px solid #9e9e9e; border-radius: 4px; padding: 0.75rem; margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center; max-width: 500px; width: 100%;'
     const buttonGroupStyle = 'display: flex; gap: 0.5rem; align-items: center;'
     const buttonStyle = 'padding: 0.5rem; border: none; border-radius: 4px; background: #e0e0e0; color: #424242; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: background 0.2s; min-width: 36px; height: 36px;'
     const disabledStyle = 'padding: 0.5rem; border: none; border-radius: 4px; background: #f0f0f0; color: #9e9e9e; cursor: not-allowed; display: flex; align-items: center; justify-content: center; min-width: 36px; height: 36px;'
@@ -948,7 +952,7 @@ export class FreeplayDiagram implements IDiagram {
     element.innerHTML = output
 
     // Add click handler to SVG
-    const svg = element.querySelector('svg')
+    const svg = element.querySelector('svg.godash-board') as SVGSVGElement | null
     const undoButton = document.getElementById(undoButtonId)
     const redoButton = document.getElementById(redoButtonId)
     const passButton = document.getElementById(passButtonId)
@@ -964,7 +968,9 @@ export class FreeplayDiagram implements IDiagram {
         const pt = svg.createSVGPoint()
         pt.x = mouseEvent.clientX
         pt.y = mouseEvent.clientY
-        const svgPt = pt.matrixTransform(svg.getScreenCTM()!.inverse())
+        const ctm = svg.getScreenCTM()
+        if (!ctm) return
+        const svgPt = pt.matrixTransform(ctm.inverse())
 
         // Convert to board coordinates
         const cellSize = 30
@@ -1210,8 +1216,8 @@ export class ReplayDiagram implements IDiagram {
     // Move counter metadata
     const moveCounter = `<div style="color: #616161; font-size: 0.9rem; font-weight: 500;">${currentMove} / ${totalMoves}</div>`
 
-    // Material-styled button bar (admonition style)
-    const barStyle = 'background: #f8f8f8; border-left: 4px solid #9e9e9e; border-radius: 0 4px 4px 0; padding: 0.75rem; margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center; max-width: 500px; width: 100%;'
+    // Material-styled button bar
+    const barStyle = 'background: #f8f8f8; border: 1px solid #9e9e9e; border-radius: 4px; padding: 0.75rem; margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center; max-width: 500px; width: 100%;'
     const buttonGroupStyle = 'display: flex; gap: 0.5rem; align-items: center;'
     const buttonStyle = 'padding: 0.5rem; border: none; border-radius: 4px; background: #e0e0e0; color: #424242; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: background 0.2s; min-width: 36px; height: 36px;'
     const disabledStyle = 'padding: 0.5rem; border: none; border-radius: 4px; background: #f0f0f0; color: #9e9e9e; cursor: not-allowed; display: flex; align-items: center; justify-content: center; min-width: 36px; height: 36px;'
