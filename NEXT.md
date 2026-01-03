@@ -1,4 +1,3 @@
-- Clean up visually (de-language buttons)
 - Ko
 - Copy board
 - Arrow support on focus
