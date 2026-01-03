@@ -656,18 +656,42 @@ export class ProblemDiagram implements IDiagram {
       turnIndicator = `<div style="width: 28px; height: 28px; border-radius: 50%; background: ${stoneColor}; border: ${stoneBorder}; margin-right: 0.5rem;" title="${isBlackTurn ? 'Black' : 'White'} to play"></div>`
     }
 
-    const barStyle = 'background: #f8f8f8; border-left: 4px solid #9e9e9e; border-radius: 0 4px 4px 0; padding: 0.75rem; margin-top: 0.5rem; display: flex; justify-content: space-between; align-items: center; max-width: 500px; width: 100%;'
+    // SVG icons for result indicator
+    const checkIcon = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2e7d32" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>'
+    const xIcon = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#c62828" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>'
+    const ellipsisIcon = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#616161" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>'
+
+    // Dynamic bar styling based on result
+    let barBackground = '#f8f8f8'
+    let barBorderColor = '#9e9e9e'
+    let buttonBackground = '#e0e0e0'
+    let buttonColor = '#424242'
+
+    if (this.result === ProblemResult.Success) {
+      barBackground = '#e8f5e9'  // Light green
+      barBorderColor = '#2e7d32'  // Green
+      buttonBackground = '#a5d6a7'  // Medium green
+      buttonColor = '#1b5e20'  // Dark green
+    } else if (this.result === ProblemResult.Failure) {
+      barBackground = '#ffebee'  // Light red
+      barBorderColor = '#c62828'  // Red
+      buttonBackground = '#ffcdd2'  // Softer red
+      buttonColor = '#c62828'  // Red
+    }
+
+    const barStyle = `background: ${barBackground}; border-left: 4px solid ${barBorderColor}; border-radius: 0 4px 4px 0; padding: 0.75rem; margin-top: 0.5rem; display: flex; justify-content: space-between; align-items: center; max-width: 500px; width: 100%;`
     const buttonGroupStyle = 'display: flex; gap: 0.5rem; align-items: center;'
-    const buttonStyle = 'padding: 0.5rem; border: none; border-radius: 4px; background: #e0e0e0; color: #424242; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: background 0.2s; min-width: 36px; height: 36px;'
+    const buttonStyle = `padding: 0.5rem; border: none; border-radius: 4px; background: ${buttonBackground}; color: ${buttonColor}; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: background 0.2s; min-width: 36px; height: 36px;`
+    const iconStyle = 'display: flex; align-items: center; justify-content: center; min-width: 36px; height: 36px;'
 
     // Result indicator metadata
     let resultIndicator = ''
     if (this.result === ProblemResult.Success) {
-      resultIndicator = `<div style="font-weight: 600; font-size: 1.1rem; color: #2e7d32;">✓</div>`
+      resultIndicator = `<div style="${iconStyle}">${checkIcon}</div>`
     } else if (this.result === ProblemResult.Failure) {
-      resultIndicator = `<div style="font-weight: 600; font-size: 1.1rem; color: #c62828;">✗</div>`
+      resultIndicator = `<div style="${iconStyle}">${xIcon}</div>`
     } else {
-      resultIndicator = `<div style="font-weight: 600; font-size: 1.1rem; color: #616161;">...</div>`
+      resultIndicator = `<div style="${iconStyle}">${ellipsisIcon}</div>`
     }
 
     output += `<div style="${barStyle}">`
