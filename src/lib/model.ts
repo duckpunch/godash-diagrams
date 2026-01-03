@@ -993,38 +993,39 @@ export class FreeplayDiagram implements IDiagram {
     // Turn indicator circle
     const stoneColor = this.isBlackTurn ? '#000000' : '#ffffff'
     const stoneBorder = this.isBlackTurn ? 'none' : '2px solid #424242'
-    const turnIndicator = `<div style="width: 28px; height: 28px; border-radius: 50%; background: ${stoneColor}; border: ${stoneBorder}; margin-right: 0.5rem;" title="${this.isBlackTurn ? 'Black' : 'White'} to play"></div>`
+    const turnIndicator = `<div style="width: 28px; height: 28px; border-radius: 50%; background: ${stoneColor}; border: ${stoneBorder};" title="${this.isBlackTurn ? 'Black' : 'White'} to play"></div>`
 
     // Move counter metadata
     const moveCount = this.currentMoveIndex + 1  // Total moves played
     const moveCounter = `<div style="color: #616161; font-size: 0.9rem; font-weight: 500;">${moveCount}</div>`
 
-    // Material-styled button bar
+    // Material-styled button bar (turn indicator left, buttons right)
     const barStyle = 'background: #f8f8f8; border: 1px solid #9e9e9e; border-radius: 4px; padding: 0.75rem; margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center; max-width: 500px; width: 100%;'
     const buttonGroupStyle = 'display: flex; gap: 0.5rem; align-items: center;'
     const buttonStyle = 'padding: 0.5rem; border: none; border-radius: 4px; background: #e0e0e0; color: #424242; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: background 0.2s; min-width: 36px; height: 36px;'
     const disabledStyle = 'padding: 0.5rem; border: none; border-radius: 4px; background: #f0f0f0; color: #9e9e9e; cursor: not-allowed; display: flex; align-items: center; justify-content: center; min-width: 36px; height: 36px;'
 
-    // Capture bar style
-    const captureBarStyle = 'background: #f8f8f8; border: 1px solid #9e9e9e; border-radius: 4px; padding: 0.75rem; margin-top: 0.5rem; display: flex; gap: 1rem; align-items: center; max-width: 500px; width: 100%;'
+    // Capture bar style (with move counter on right)
+    const captureBarStyle = 'background: #f8f8f8; border: 1px solid #9e9e9e; border-radius: 4px; padding: 0.75rem; margin-top: 0.5rem; display: flex; justify-content: space-between; align-items: center; max-width: 500px; width: 100%;'
+    const captureGroupStyle = 'display: flex; gap: 1rem; align-items: center;'
     const captureItemStyle = 'display: flex; gap: 0.25rem; align-items: center;'
     const captureNumberStyle = 'font-size: 0.9rem; font-weight: 500; color: #424242;'
 
     let output = `<div class="freeplay-container">`
     output += `<div style="${barStyle}">`
-    output += `<div style="${buttonGroupStyle}">`
     output += turnIndicator
+    output += `<div style="${buttonGroupStyle}">`
     output += `<button id="${undoButtonId}" style="${this.currentMoveIndex >= 0 ? buttonStyle : disabledStyle}" ${this.currentMoveIndex < 0 ? 'disabled' : ''} title="Undo">${undoIcon}</button>`
     output += `<button id="${redoButtonId}" style="${this.currentMoveIndex < this.history.length - 1 ? buttonStyle : disabledStyle}" ${this.currentMoveIndex >= this.history.length - 1 ? 'disabled' : ''} title="Redo">${redoIcon}</button>`
     output += `<button id="${passButtonId}" style="${buttonStyle}" title="Pass">${passIcon}</button>`
     output += `<button id="${resetButtonId}" style="${buttonStyle}" title="Reset">${resetIcon}</button>`
     output += `</div>`
-    output += moveCounter
     output += `</div>`
     output += boardSvg
 
-    // Capture count bar (below board)
+    // Capture count bar (below board) with move counter on right
     output += `<div style="${captureBarStyle}">`
+    output += `<div style="${captureGroupStyle}">`
     output += `<div style="${captureItemStyle}">`
     output += whiteCaptureIcon
     output += `<span style="${captureNumberStyle}">${this.whiteCaptured}</span>`
@@ -1033,6 +1034,8 @@ export class FreeplayDiagram implements IDiagram {
     output += blackCaptureIcon
     output += `<span style="${captureNumberStyle}">${this.blackCaptured}</span>`
     output += `</div>`
+    output += `</div>`
+    output += moveCounter
     output += `</div>`
 
     output += `</div>`
