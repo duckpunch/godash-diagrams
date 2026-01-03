@@ -857,9 +857,9 @@ export class FreeplayDiagram implements IDiagram {
             label: String(moveNumber),
             shape: 'text'
           })
-          moveNumber++
         }
-        // Skip pass moves - they don't get numbered
+        // Increment for both moves and passes
+        moveNumber++
       }
     }
 
@@ -889,13 +889,13 @@ export class FreeplayDiagram implements IDiagram {
     // SVG icons
     const undoIcon = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>'
     const redoIcon = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>'
-    const passIcon = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/></svg>'
+    const passIcon = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.1 2.182a10 10 0 0 1 3.8 0"/><path d="M13.9 21.818a10 10 0 0 1-3.8 0"/><path d="M17.609 3.721a10 10 0 0 1 2.69 2.7"/><path d="M2.182 13.9a10 10 0 0 1 0-3.8"/><path d="M20.279 17.609a10 10 0 0 1-2.7 2.69"/><path d="M21.818 10.1a10 10 0 0 1 0 3.8"/><path d="M3.721 6.391a10 10 0 0 1 2.7-2.69"/><path d="M6.391 20.279a10 10 0 0 1-2.69-2.7"/></svg>'
     const resetIcon = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11"/></svg>'
 
     // Turn indicator circle
     const stoneColor = this.isBlackTurn ? '#000000' : '#ffffff'
     const stoneBorder = this.isBlackTurn ? 'none' : '2px solid #424242'
-    const turnIndicator = `<div style="width: 20px; height: 20px; border-radius: 50%; background: ${stoneColor}; border: ${stoneBorder}; margin-right: 0.25rem;" title="${this.isBlackTurn ? 'Black' : 'White'} to play"></div>`
+    const turnIndicator = `<div style="width: 28px; height: 28px; border-radius: 50%; background: ${stoneColor}; border: ${stoneBorder}; margin-right: 0.5rem;" title="${this.isBlackTurn ? 'Black' : 'White'} to play"></div>`
 
     // Material-styled button bar (admonition style)
     const barStyle = 'background: #f8f8f8; border-left: 4px solid #9e9e9e; border-radius: 0 4px 4px 0; padding: 0.75rem; margin-top: 0.5rem; display: flex; gap: 0.5rem; align-items: center; max-width: 500px; width: 100%;'
