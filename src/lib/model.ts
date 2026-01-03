@@ -681,15 +681,18 @@ export class ProblemDiagram implements IDiagram {
 
       svg.addEventListener('click', (event: Event) => {
         const mouseEvent = event as MouseEvent
-        const rect = svg.getBoundingClientRect()
-        const x = mouseEvent.clientX - rect.left
-        const y = mouseEvent.clientY - rect.top
+
+        // Convert screen coordinates to SVG coordinates (accounting for viewBox)
+        const pt = svg.createSVGPoint()
+        pt.x = mouseEvent.clientX
+        pt.y = mouseEvent.clientY
+        const svgPt = pt.matrixTransform(svg.getScreenCTM()!.inverse())
 
         // Convert to board coordinates
         const cellSize = 30
         const margin = cellSize
-        const col = Math.round((x - margin) / cellSize)
-        const row = Math.round((y - margin) / cellSize)
+        const col = Math.round((svgPt.x - margin) / cellSize)
+        const row = Math.round((svgPt.y - margin) / cellSize)
 
         // Validate coordinates are within board bounds
         if (row >= 0 && row < rowCount && col >= 0 && col < columnCount) {
@@ -923,15 +926,18 @@ export class FreeplayDiagram implements IDiagram {
 
       svg.addEventListener('click', (event: Event) => {
         const mouseEvent = event as MouseEvent
-        const rect = svg.getBoundingClientRect()
-        const x = mouseEvent.clientX - rect.left
-        const y = mouseEvent.clientY - rect.top
+
+        // Convert screen coordinates to SVG coordinates (accounting for viewBox)
+        const pt = svg.createSVGPoint()
+        pt.x = mouseEvent.clientX
+        pt.y = mouseEvent.clientY
+        const svgPt = pt.matrixTransform(svg.getScreenCTM()!.inverse())
 
         // Convert to board coordinates
         const cellSize = 30
         const margin = cellSize
-        const col = Math.round((x - margin) / cellSize)
-        const row = Math.round((y - margin) / cellSize)
+        const col = Math.round((svgPt.x - margin) / cellSize)
+        const row = Math.round((svgPt.y - margin) / cellSize)
 
         // Validate coordinates are within board bounds
         if (row >= 0 && row < rowCount && col >= 0 && col < columnCount) {
