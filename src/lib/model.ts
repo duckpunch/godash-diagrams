@@ -398,33 +398,52 @@ export class ProblemDiagram implements IDiagram {
 
       // Check if sequence starts with wildcard (root-level wildcard)
       if (path[0] === '*') {
-        // Build the continuation tree (everything after the wildcard)
-        let continuationTree: SequenceTree = ImmutableMap<Coordinate, SequenceNode>()
+        // Build the continuation tree (everything after the wildcard) using same logic as non-root
+        // This supports wildcards in the continuation (e.g., *>D>*>B)
+        let tree: SequenceTree = ImmutableMap<Coordinate, SequenceNode>()
+        let wildcardTree: SequenceTree = ImmutableMap<Coordinate, SequenceNode>()
+        let hasWildcard = false
 
         for (let i = path.length - 1; i >= 1; i--) {
           const item = path[i]
+          const isLastNode = i === path.length - 1
+
+          // Determine result for this node
+          let nodeResult: ProblemResult
+          if (isLastNode) {
+            nodeResult = isSolution ? ProblemResult.Success : ProblemResult.Failure
+          } else {
+            nodeResult = ProblemResult.Incomplete
+          }
+
           if (item === '*') {
-            throw new Error(`Sequence '${sequence}': cannot have consecutive wildcards`)
+            // Skip wildcards - they're handled as properties of the previous node
+            hasWildcard = true
+            continue
           }
 
           const coord = item as Coordinate
-          const isLastNode = i === path.length - 1
-          const nodeResult = isLastNode
-            ? (isSolution ? ProblemResult.Success : ProblemResult.Failure)
-            : ProblemResult.Incomplete
+
+          // If we just passed a wildcard, this coord is the computer response to the wildcard
+          if (hasWildcard) {
+            wildcardTree = tree
+            tree = ImmutableMap<Coordinate, SequenceNode>()
+            hasWildcard = false
+          }
 
           const node: SequenceNode = {
             result: nodeResult,
-            children: continuationTree,
-            wildcardChild: undefined
+            children: tree,
+            wildcardChild: wildcardTree.size > 0 ? { result: ProblemResult.Incomplete, children: wildcardTree, wildcardChild: undefined } : undefined
           }
-          continuationTree = ImmutableMap<Coordinate, SequenceNode>().set(coord, node)
+          tree = ImmutableMap<Coordinate, SequenceNode>().set(coord, node)
+          wildcardTree = ImmutableMap<Coordinate, SequenceNode>()
         }
 
-        // Apply wildcardChild to all root nodes (or create a dummy root if tree is empty)
+        // Apply wildcardChild to all root nodes
         const wildcardNode: SequenceNode = {
           result: ProblemResult.Incomplete,
-          children: continuationTree,
+          children: tree,
           wildcardChild: undefined
         }
 
