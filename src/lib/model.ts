@@ -643,17 +643,31 @@ export class ProblemDiagram implements IDiagram {
     // Render
     let output = boardSvg
 
-    // Add reset button and result label
+    // Material-styled button bar with result label
     const resetButtonId = `reset-${Math.random().toString(36).substr(2, 9)}`
-    const buttonStyle = 'padding: 0.5rem 1rem; margin: 0.5rem 0.25rem; border: 1px solid #ccc; border-radius: 4px; background: #fff; cursor: pointer; font-size: 0.9rem;'
-    output += `<div style="margin-top: 1rem; display: flex; align-items: center;">`
-    output += `<button id="${resetButtonId}" style="${buttonStyle}">Reset</button>`
+    const resetIcon = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11"/></svg>'
+
+    // Turn indicator circle (only show when game is in progress)
+    let turnIndicator = ''
+    if (this.result === ProblemResult.Incomplete) {
+      const isBlackTurn = this.isBlackTurn
+      const stoneColor = isBlackTurn ? '#000000' : '#ffffff'
+      const stoneBorder = isBlackTurn ? 'none' : '2px solid #424242'
+      turnIndicator = `<div style="width: 28px; height: 28px; border-radius: 50%; background: ${stoneColor}; border: ${stoneBorder}; margin-right: 0.5rem;" title="${isBlackTurn ? 'Black' : 'White'} to play"></div>`
+    }
+
+    const barStyle = 'background: #f8f8f8; border-left: 4px solid #9e9e9e; border-radius: 0 4px 4px 0; padding: 0.75rem; margin-top: 0.5rem; display: flex; gap: 0.5rem; align-items: center; max-width: 500px; width: 100%;'
+    const buttonStyle = 'padding: 0.5rem; border: none; border-radius: 4px; background: #e0e0e0; color: #424242; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: background 0.2s; min-width: 36px; height: 36px;'
+
+    output += `<div style="${barStyle}">`
+    output += turnIndicator
+    output += `<button id="${resetButtonId}" style="${buttonStyle}" title="Reset">${resetIcon}</button>`
 
     // Add result label next to button
     if (this.result === ProblemResult.Success) {
-      output += `<span style="margin-left: 1rem; font-weight: 600; font-size: 1.1rem; color: #155724;">Success!</span>`
+      output += `<span style="font-weight: 600; font-size: 1rem; color: #2e7d32;">✓ Success!</span>`
     } else if (this.result === ProblemResult.Failure) {
-      output += `<span style="margin-left: 1rem; font-weight: 600; font-size: 1.1rem; color: #721c24;">Incorrect</span>`
+      output += `<span style="font-weight: 600; font-size: 1rem; color: #c62828;">✗ Incorrect</span>`
     }
 
     output += `</div>`
@@ -869,15 +883,28 @@ export class FreeplayDiagram implements IDiagram {
     output += `<div id="${turnInfoId}" style="margin-bottom: 1rem; padding: 0.5rem; font-weight: 600; font-size: 1.1rem;">${this.isBlackTurn ? 'Black' : 'White'} to play</div>`
     output += boardSvg
 
-    // Control buttons
-    const buttonStyle = 'padding: 0.5rem 1rem; margin: 0.5rem 0.25rem; border: 1px solid #ccc; border-radius: 4px; background: #fff; cursor: pointer; font-size: 0.9rem;'
-    const disabledStyle = 'padding: 0.5rem 1rem; margin: 0.5rem 0.25rem; border: 1px solid #ccc; border-radius: 4px; background: #f0f0f0; cursor: not-allowed; font-size: 0.9rem; color: #999;'
+    // SVG icons
+    const undoIcon = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>'
+    const redoIcon = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>'
+    const passIcon = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/></svg>'
+    const resetIcon = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11"/></svg>'
 
-    output += `<div style="margin-top: 1rem;">`
-    output += `<button id="${undoButtonId}" style="${this.currentMoveIndex >= 0 ? buttonStyle : disabledStyle}" ${this.currentMoveIndex < 0 ? 'disabled' : ''}>← Undo</button>`
-    output += `<button id="${redoButtonId}" style="${this.currentMoveIndex < this.history.length - 1 ? buttonStyle : disabledStyle}" ${this.currentMoveIndex >= this.history.length - 1 ? 'disabled' : ''}>Redo →</button>`
-    output += `<button id="${passButtonId}" style="${buttonStyle}">Pass</button>`
-    output += `<button id="${resetButtonId}" style="${buttonStyle}">Reset</button>`
+    // Turn indicator circle
+    const stoneColor = this.isBlackTurn ? '#000000' : '#ffffff'
+    const stoneBorder = this.isBlackTurn ? 'none' : '2px solid #424242'
+    const turnIndicator = `<div style="width: 20px; height: 20px; border-radius: 50%; background: ${stoneColor}; border: ${stoneBorder}; margin-right: 0.25rem;" title="${this.isBlackTurn ? 'Black' : 'White'} to play"></div>`
+
+    // Material-styled button bar (admonition style)
+    const barStyle = 'background: #f8f8f8; border-left: 4px solid #9e9e9e; border-radius: 0 4px 4px 0; padding: 0.75rem; margin-top: 0.5rem; display: flex; gap: 0.5rem; align-items: center; max-width: 500px; width: 100%;'
+    const buttonStyle = 'padding: 0.5rem; border: none; border-radius: 4px; background: #e0e0e0; color: #424242; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: background 0.2s; min-width: 36px; height: 36px;'
+    const disabledStyle = 'padding: 0.5rem; border: none; border-radius: 4px; background: #f0f0f0; color: #9e9e9e; cursor: not-allowed; display: flex; align-items: center; justify-content: center; min-width: 36px; height: 36px;'
+
+    output += `<div style="${barStyle}">`
+    output += turnIndicator
+    output += `<button id="${undoButtonId}" style="${this.currentMoveIndex >= 0 ? buttonStyle : disabledStyle}" ${this.currentMoveIndex < 0 ? 'disabled' : ''} title="Undo">${undoIcon}</button>`
+    output += `<button id="${redoButtonId}" style="${this.currentMoveIndex < this.history.length - 1 ? buttonStyle : disabledStyle}" ${this.currentMoveIndex >= this.history.length - 1 ? 'disabled' : ''} title="Redo">${redoIcon}</button>`
+    output += `<button id="${passButtonId}" style="${buttonStyle}" title="Pass">${passIcon}</button>`
+    output += `<button id="${resetButtonId}" style="${buttonStyle}" title="Reset">${resetIcon}</button>`
     output += `</div>`
 
     output += `</div>`
@@ -1131,10 +1158,11 @@ export class ReplayDiagram implements IDiagram {
     const nextButtonId = `next-${Math.random().toString(36).substr(2, 9)}`
     const lastButtonId = `last-${Math.random().toString(36).substr(2, 9)}`
 
-    const buttonStyle = 'padding: 0.5rem 1rem; margin: 0.5rem 0.25rem; border: 1px solid #ccc; border-radius: 4px; background: #fff; cursor: pointer; font-size: 0.9rem;'
-    const disabledStyle = 'padding: 0.5rem 1rem; margin: 0.5rem 0.25rem; border: 1px solid #ccc; border-radius: 4px; background: #f0f0f0; cursor: not-allowed; font-size: 0.9rem; color: #999;'
-
-    let output = `<div class="replay-container">`
+    // SVG icons for navigation
+    const firstIcon = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m17 18-6-6 6-6"/><path d="M7 6v12"/></svg>'
+    const prevIcon = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>'
+    const nextIcon = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>'
+    const lastIcon = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7 18 6-6-6-6"/><path d="M17 6v12"/></svg>'
 
     // Move counter
     const currentMove = this.currentMoveIndex + 1  // Convert from index to move number
@@ -1147,15 +1175,20 @@ export class ReplayDiagram implements IDiagram {
       ? `Move ${currentMove} / ${totalMoves} (${currentColor})`
       : `Start position (${totalMoves} moves)`
 
+    let output = `<div class="replay-container">`
     output += `<div style="margin-bottom: 1rem; padding: 0.5rem; font-weight: 600; font-size: 1.1rem;">${moveInfo}</div>`
     output += boardSvg
 
-    // Navigation buttons
-    output += `<div style="margin-top: 1rem;">`
-    output += `<button id="${firstButtonId}" style="${this.currentMoveIndex >= 0 ? buttonStyle : disabledStyle}" ${this.currentMoveIndex < 0 ? 'disabled' : ''}>|&lt;</button>`
-    output += `<button id="${prevButtonId}" style="${this.currentMoveIndex >= 0 ? buttonStyle : disabledStyle}" ${this.currentMoveIndex < 0 ? 'disabled' : ''}>&lt;</button>`
-    output += `<button id="${nextButtonId}" style="${this.currentMoveIndex < this.moveSequence.length - 1 ? buttonStyle : disabledStyle}" ${this.currentMoveIndex >= this.moveSequence.length - 1 ? 'disabled' : ''}>&gt;</button>`
-    output += `<button id="${lastButtonId}" style="${this.currentMoveIndex < this.moveSequence.length - 1 ? buttonStyle : disabledStyle}" ${this.currentMoveIndex >= this.moveSequence.length - 1 ? 'disabled' : ''}>&gt;|</button>`
+    // Material-styled button bar (admonition style)
+    const barStyle = 'background: #f8f8f8; border-left: 4px solid #9e9e9e; border-radius: 0 4px 4px 0; padding: 0.75rem; margin-top: 0.5rem; display: flex; gap: 0.5rem; align-items: center; max-width: 500px; width: 100%;'
+    const buttonStyle = 'padding: 0.5rem; border: none; border-radius: 4px; background: #e0e0e0; color: #424242; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: background 0.2s; min-width: 36px; height: 36px;'
+    const disabledStyle = 'padding: 0.5rem; border: none; border-radius: 4px; background: #f0f0f0; color: #9e9e9e; cursor: not-allowed; display: flex; align-items: center; justify-content: center; min-width: 36px; height: 36px;'
+
+    output += `<div style="${barStyle}">`
+    output += `<button id="${firstButtonId}" style="${this.currentMoveIndex >= 0 ? buttonStyle : disabledStyle}" ${this.currentMoveIndex < 0 ? 'disabled' : ''} title="First">${firstIcon}</button>`
+    output += `<button id="${prevButtonId}" style="${this.currentMoveIndex >= 0 ? buttonStyle : disabledStyle}" ${this.currentMoveIndex < 0 ? 'disabled' : ''} title="Previous">${prevIcon}</button>`
+    output += `<button id="${nextButtonId}" style="${this.currentMoveIndex < this.moveSequence.length - 1 ? buttonStyle : disabledStyle}" ${this.currentMoveIndex >= this.moveSequence.length - 1 ? 'disabled' : ''} title="Next">${nextIcon}</button>`
+    output += `<button id="${lastButtonId}" style="${this.currentMoveIndex < this.moveSequence.length - 1 ? buttonStyle : disabledStyle}" ${this.currentMoveIndex >= this.moveSequence.length - 1 ? 'disabled' : ''} title="Last">${lastIcon}</button>`
     output += `</div>`
 
     output += `</div>`
