@@ -3,6 +3,7 @@ import { Board, Move, Coordinate, BLACK, WHITE, isLegalMove, addMove, difference
 import { Map as ImmutableMap } from 'immutable'
 import { validateBoard, parseOptions } from './validate'
 import { boardToSvg } from './render'
+import { renderCaptureBar } from './ui/CaptureBar'
 
 export const ProblemResult = {
   Success: 'success',
@@ -746,15 +747,6 @@ export class ProblemDiagram implements IDiagram {
     // Generate SVG using current board state
     const boardSvg = boardToSvg(this.currentBoard, rowCount, columnCount, undefined, lastMove)
 
-    // Capture count icons (stone with red X)
-    const whiteCaptureIcon = '<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="8" fill="white" stroke="black" stroke-width="1.5"/><line x1="3" y1="3" x2="21" y2="21" stroke="red" stroke-width="2" stroke-linecap="round"/><line x1="21" y1="3" x2="3" y2="21" stroke="red" stroke-width="2" stroke-linecap="round"/></svg>'
-    const blackCaptureIcon = '<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="8" fill="black" stroke="black" stroke-width="1.5"/><line x1="3" y1="3" x2="21" y2="21" stroke="red" stroke-width="2" stroke-linecap="round"/><line x1="21" y1="3" x2="3" y2="21" stroke="red" stroke-width="2" stroke-linecap="round"/></svg>'
-
-    // Capture bar style (same as button bar but no dynamic colors)
-    const captureBarStyle = 'background: #f8f8f8; border: 1px solid #9e9e9e; border-radius: 4px; padding: 0.75rem; margin-bottom: 0.5rem; display: flex; gap: 1rem; align-items: center; max-width: 500px; width: 100%;'
-    const captureItemStyle = 'display: flex; gap: 0.25rem; align-items: center;'
-    const captureNumberStyle = 'font-size: 0.9rem; font-weight: 500; color: #424242;'
-
     // Render
     let output = `<div class="problem-container">`
     output += `<div style="${barStyle}">`
@@ -764,16 +756,11 @@ export class ProblemDiagram implements IDiagram {
     output += boardSvg
 
     // Capture count bar (below board)
-    output += `<div style="${captureBarStyle}">`
-    output += `<div style="${captureItemStyle}">`
-    output += whiteCaptureIcon
-    output += `<span style="${captureNumberStyle}">${this.whiteCaptured}</span>`
-    output += `</div>`
-    output += `<div style="${captureItemStyle}">`
-    output += blackCaptureIcon
-    output += `<span style="${captureNumberStyle}">${this.blackCaptured}</span>`
-    output += `</div>`
-    output += `</div>`
+    output += renderCaptureBar({
+      whiteCaptured: this.whiteCaptured,
+      blackCaptured: this.blackCaptured,
+      marginDirection: 'bottom',
+    })
 
     output += `</div>`
 
