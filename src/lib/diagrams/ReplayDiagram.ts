@@ -251,10 +251,10 @@ export class ReplayDiagram implements IDiagram {
     element.innerHTML = output
 
     // Add button event listeners
-    const firstButton = document.getElementById(firstButtonId)
-    const prevButton = document.getElementById(prevButtonId)
-    const nextButton = document.getElementById(nextButtonId)
-    const lastButton = document.getElementById(lastButtonId)
+    const firstButton = element.querySelector(`#${firstButtonId}`) as HTMLElement | null
+    const prevButton = element.querySelector(`#${prevButtonId}`) as HTMLElement | null
+    const nextButton = element.querySelector(`#${nextButtonId}`) as HTMLElement | null
+    const lastButton = element.querySelector(`#${lastButtonId}`) as HTMLElement | null
 
     if (firstButton) {
       firstButton.addEventListener('click', () => this.first())

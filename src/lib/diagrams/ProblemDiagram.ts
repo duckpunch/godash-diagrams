@@ -242,6 +242,12 @@ export class ProblemDiagram implements IDiagram {
       }
     }
 
+    // Validate that at least one solution is defined
+    const hasSolution = allSequences.some(seq => seq.isSolution)
+    if (!hasSolution) {
+      throw new Error('At least one solution is required')
+    }
+
     // Build sequence tree from all sequences
     this.sequenceTree = ImmutableMap<Coordinate, SequenceNode>()
     for (const { sequence, isSolution } of allSequences) {

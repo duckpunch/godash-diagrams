@@ -33,7 +33,7 @@ export class FreeplayDiagram implements IDiagram {
     this.element = element
 
     // Parse board
-    const parsed = validateBoard(lines, { allowEmpty: true })
+    const parsed = validateBoard(lines, { allowEmpty: true, validateCharacters: false })
     this.parsedBoard = parsed
 
     // Parse YAML configuration
@@ -182,6 +182,15 @@ export class FreeplayDiagram implements IDiagram {
 
     // Build annotations for move numbers if numbered is enabled
     const annotations = new Map<string, AnnotationInfo>()
+
+    // Add static annotations from board definition (otherMarks)
+    for (const [mark, coordinates] of Object.entries(this.parsedBoard.otherMarks)) {
+      for (const coord of coordinates) {
+        const key = `${coord.x},${coord.y}`
+        annotations.set(key, { label: mark, shape: 'text' })
+      }
+    }
+
     if (this.numbered) {
       let moveNumber = 1
       for (let i = 0; i <= this.currentMoveIndex; i++) {

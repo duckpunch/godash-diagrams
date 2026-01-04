@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import { BLACK, WHITE, Coordinate } from 'godash'
 import { ProblemDiagram } from '../ProblemDiagram'
 import { ProblemResult } from '../types'
 import { createMockElement, createBoardLines } from './helpers'
@@ -30,19 +31,24 @@ describe('ProblemDiagram', () => {
       const lines = createBoardLines(`
         problem
 
-        a b .
+        a b c
         . . .
         . . .
 
         ---
-        solutions: a>b
+        triangle: a
+        square: b
+        solutions: c
       `)
 
       const diagram = new ProblemDiagram(element, lines)
       diagram.render()
 
-      expect(element.innerHTML).toContain('>a<')
-      expect(element.innerHTML).toContain('>b<')
+      // Check for triangle and square shapes (not text annotations)
+      expect(element.innerHTML).toContain('polygon') // triangle is a polygon
+      expect(element.innerHTML).toContain('rect') // square is a rect
+      // Text marks like 'c' should NOT be rendered
+      expect(element.innerHTML).not.toContain('>c<')
     })
 
     it('renders reset button', () => {
@@ -147,7 +153,7 @@ describe('ProblemDiagram', () => {
       `)
 
       const diagram = new ProblemDiagram(element, lines)
-      expect(diagram.toPlay).toBe(1) // BLACK = 1
+      expect(diagram.toPlay).toBe(BLACK)
     })
 
     it('accepts to-play: white option', () => {
@@ -165,7 +171,7 @@ describe('ProblemDiagram', () => {
       `)
 
       const diagram = new ProblemDiagram(element, lines)
-      expect(diagram.toPlay).toBe(2) // WHITE = 2
+      expect(diagram.toPlay).toBe(WHITE)
     })
 
     it('defaults to black to play', () => {
@@ -182,7 +188,7 @@ describe('ProblemDiagram', () => {
       `)
 
       const diagram = new ProblemDiagram(element, lines)
-      expect(diagram.toPlay).toBe(1) // BLACK = 1
+      expect(diagram.toPlay).toBe(BLACK)
     })
 
     it('accepts ignore-ko option', () => {
@@ -207,13 +213,13 @@ describe('ProblemDiagram', () => {
       const lines = createBoardLines(`
         problem
 
-        a . .
+        a b .
         . . .
         . . .
 
         ---
         black: a
-        solutions: a
+        solutions: b
       `)
 
       const diagram = new ProblemDiagram(element, lines)
@@ -227,13 +233,13 @@ describe('ProblemDiagram', () => {
       const lines = createBoardLines(`
         problem
 
-        a . .
+        a b .
         . . .
         . . .
 
         ---
         white: a
-        solutions: a
+        solutions: b
       `)
 
       const diagram = new ProblemDiagram(element, lines)
@@ -249,15 +255,16 @@ describe('ProblemDiagram', () => {
       const lines = createBoardLines(`
         problem
 
-        a X .
+        X a .
         . . .
         . . .
 
         ---
+        black: a
         solutions: a
       `)
 
-      // Move 'a' is occupied, should throw
+      // Move 'a' is occupied by a black stone, should throw
       expect(() => new ProblemDiagram(element, lines)).toThrow()
     })
 
@@ -598,7 +605,7 @@ describe('ProblemDiagram', () => {
       // Simulate successful move
       // Access private method through type assertion for testing
       const handleMove = (diagram as any).handleUserMove.bind(diagram)
-      const coord = { x: 0, y: 0, equals: (other: any) => other.x === 0 && other.y === 0 }
+      const coord = Coordinate(0, 0)
       handleMove(coord)
 
       // Should have success (green) colors
@@ -650,7 +657,7 @@ describe('ProblemDiagram', () => {
 
       // Simulate successful move
       const handleMove = (diagram as any).handleUserMove.bind(diagram)
-      const coord = { x: 0, y: 0, equals: (other: any) => other.x === 0 && other.y === 0 }
+      const coord = Coordinate(0, 0)
       handleMove(coord)
 
       const html = element.innerHTML

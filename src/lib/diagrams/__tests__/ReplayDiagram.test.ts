@@ -453,11 +453,11 @@ describe('ReplayDiagram', () => {
       diagram.render()
 
       // At start (move 0), next player is black
-      expect(element.innerHTML).toContain('Turn Indicator')
+      expect(element.innerHTML).toContain('Black to play')
 
       // After move 1 (black), next player is white
       clickButtonByPrefix(element, 'next')
-      expect(element.innerHTML).toContain('Turn Indicator')
+      expect(element.innerHTML).toContain('White to play')
     })
   })
 
@@ -486,16 +486,18 @@ describe('ReplayDiagram', () => {
       const lines = createBoardLines(`
         replay
 
-        1 2 3
-        4 5 6
-        7 8 9
+        1 2 . . .
+        3 4 . . .
+        5 6 . . .
+        . . . . .
+        . . . . .
       `)
 
       const diagram = new ReplayDiagram(element, lines)
       diagram.render()
 
       clickButtonByPrefix(element, 'last')
-      expect(element.innerHTML).toContain('9 / 9')
+      expect(element.innerHTML).toContain('6 / 6')
     })
   })
 })
