@@ -44,6 +44,7 @@ X X X . . . .
 . . . . . . .
 
 ---
+size: 9
 to-play: black
 solutions:
   - a>b>d
