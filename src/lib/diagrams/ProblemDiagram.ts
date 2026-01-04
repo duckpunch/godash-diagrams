@@ -8,7 +8,7 @@ import { renderCaptureBar } from '../ui/CaptureBar'
 import { renderButtonBar } from '../ui/ButtonBar'
 import { renderTurnIndicator, renderResultIcon } from '../ui/TurnIndicator'
 import { ICONS } from '../ui/icons'
-import type { IDiagram, ParsedBoard, SequenceNode, SequenceTree } from './types'
+import type { IDiagram, ParsedBoard, SequenceNode, SequenceTree, AnnotationInfo, AnnotationShape } from './types'
 import { ProblemResult, countCapturesFromDiff } from './types'
 
 export class ProblemDiagram implements IDiagram {
@@ -26,6 +26,7 @@ export class ProblemDiagram implements IDiagram {
   private blackCaptured: number
   private ignoreKo: boolean
   private koPoint: Coordinate | null
+  private annotations: Map<string, AnnotationInfo> // coord key -> annotation info
 
   constructor(element: Element, lines: string[]) {
     this.element = element
@@ -88,6 +89,40 @@ export class ProblemDiagram implements IDiagram {
     const ignoreKoOption = config['ignore-ko']
     this.ignoreKo = ignoreKoOption === 'true' || ignoreKoOption === true
 
+    // Parse shape options
+    const triangleOption = config.triangle
+    const squareOption = config.square
+    const circleOption = config.circle
+    const xOption = config.x
+
+    const triangleMarks = triangleOption
+      ? (Array.isArray(triangleOption) ? triangleOption : (typeof triangleOption === 'string' ? triangleOption.split(',').map(m => m.trim()).filter(m => m.length > 0) : []))
+      : []
+    const squareMarks = squareOption
+      ? (Array.isArray(squareOption) ? squareOption : (typeof squareOption === 'string' ? squareOption.split(',').map(m => m.trim()).filter(m => m.length > 0) : []))
+      : []
+    const circleMarks = circleOption
+      ? (Array.isArray(circleOption) ? circleOption : (typeof circleOption === 'string' ? circleOption.split(',').map(m => m.trim()).filter(m => m.length > 0) : []))
+      : []
+    const xMarks = xOption
+      ? (Array.isArray(xOption) ? xOption : (typeof xOption === 'string' ? xOption.split(',').map(m => m.trim()).filter(m => m.length > 0) : []))
+      : []
+
+    // Build shape lookup
+    const shapeMap = new Map<string, AnnotationShape>()
+    for (const mark of triangleMarks) {
+      shapeMap.set(mark, 'triangle')
+    }
+    for (const mark of squareMarks) {
+      shapeMap.set(mark, 'square')
+    }
+    for (const mark of circleMarks) {
+      shapeMap.set(mark, 'circle')
+    }
+    for (const mark of xMarks) {
+      shapeMap.set(mark, 'x')
+    }
+
     // Add black and white marks as stones to the board
     let board = parsed.board
     for (const mark of blackMarks) {
@@ -105,6 +140,17 @@ export class ProblemDiagram implements IDiagram {
 
     // Update parsed board with the new board state
     this.parsedBoard = { ...parsed, board }
+
+    // Build annotations map (only from shape options - triangle, square, circle, x)
+    this.annotations = new Map()
+    for (const [mark, shape] of shapeMap.entries()) {
+      if (parsed.otherMarks[mark]) {
+        for (const coord of parsed.otherMarks[mark]) {
+          const key = `${coord.x},${coord.y}`
+          this.annotations.set(key, { label: mark, shape })
+        }
+      }
+    }
 
     // Initialize result to incomplete
     this.result = ProblemResult.Incomplete
@@ -520,7 +566,9 @@ export class ProblemDiagram implements IDiagram {
     }
 
     // Generate SVG using current board state
-    const boardSvg = boardToSvg(this.currentBoard, rowCount, columnCount, undefined, lastMove)
+    // Show annotations only on initial board (before any moves are played)
+    const annotations = this.playedMoves.length === 0 ? this.annotations : undefined
+    const boardSvg = boardToSvg(this.currentBoard, rowCount, columnCount, annotations, lastMove)
 
     // Render
     let output = `<div class="problem-container">`
