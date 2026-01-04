@@ -97,9 +97,9 @@ ignore-ko: true`
   })
 
   it('handles special characters in strings', () => {
-    const yaml = 'sequences: ["*>d", "a>b>c"]'
+    const yaml = 'sequences: [.>d, "a>b>c"]'
     expect(parseYaml(yaml)).toEqual({
-      sequences: ['*>d', 'a>b>c']
+      sequences: ['.>d', 'a>b>c']
     })
   })
 })

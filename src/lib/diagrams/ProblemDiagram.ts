@@ -124,15 +124,15 @@ export class ProblemDiagram implements IDiagram {
       // Split sequence on ">" to get marks
       const marks = sequence.split('>').map(m => m.trim()).filter(m => m.length > 0)
 
-      // Validate all marks exist in otherMarks (or are "*")
+      // Validate all marks exist in otherMarks (or are ".")
       for (let i = 0; i < marks.length; i++) {
         const mark = marks[i]
 
-        // "*" is allowed only for player moves (alternating based on toPlay)
-        if (mark === '*') {
+        // "." is allowed only for player moves (alternating based on toPlay)
+        if (mark === '.') {
           const isPlayerMove = (i % 2 === 0) // Player moves at even indices (0, 2, 4...)
           if (!isPlayerMove) {
-            throw new Error(`${label} '${sequence}': wildcard '*' can only be used for player moves, not computer responses (position ${i + 1})`)
+            throw new Error(`${label} '${sequence}': wildcard '.' can only be used for player moves, not computer responses (position ${i + 1})`)
           }
           continue
         }
@@ -150,7 +150,7 @@ export class ProblemDiagram implements IDiagram {
         const mark = marks[i]
 
         // Skip wildcard validation (can't validate "any move")
-        if (mark === '*') {
+        if (mark === '.') {
           currentColor = currentColor === BLACK ? WHITE : BLACK
           continue
         }
@@ -202,19 +202,19 @@ export class ProblemDiagram implements IDiagram {
       const marks = sequence.split('>').map(m => m.trim()).filter(m => m.length > 0)
 
       // Build path of coordinates and track wildcards
-      const path: Array<Coordinate | '*'> = []
+      const path: Array<Coordinate | '.'> = []
       for (const mark of marks) {
-        if (mark === '*') {
-          path.push('*')
+        if (mark === '.') {
+          path.push('.')
         } else {
           path.push(parsed.otherMarks[mark][0])
         }
       }
 
       // Check if sequence starts with wildcard (root-level wildcard)
-      if (path[0] === '*') {
+      if (path[0] === '.') {
         // Build the continuation tree (everything after the wildcard) using same logic as non-root
-        // This supports wildcards in the continuation (e.g., *>D>*>B)
+        // This supports wildcards in the continuation (e.g., .>D>.>B)
         let tree: SequenceTree = ImmutableMap<Coordinate, SequenceNode>()
         let wildcardTree: SequenceTree = ImmutableMap<Coordinate, SequenceNode>()
         let hasWildcard = false
@@ -231,7 +231,7 @@ export class ProblemDiagram implements IDiagram {
             nodeResult = ProblemResult.Incomplete
           }
 
-          if (item === '*') {
+          if (item === '.') {
             // Skip wildcards - they're handled as properties of the previous node
             hasWildcard = true
             continue
@@ -284,7 +284,7 @@ export class ProblemDiagram implements IDiagram {
             nodeResult = ProblemResult.Incomplete
           }
 
-          if (item === '*') {
+          if (item === '.') {
             // Skip wildcards - they're handled as properties of the previous node
             hasWildcard = true
             continue
@@ -462,7 +462,7 @@ export class ProblemDiagram implements IDiagram {
 
   private reset(): void {
     this.currentTree = this.sequenceTree
-    // Check if any root node has a wildcardChild (for root-level wildcards like "*>A")
+    // Check if any root node has a wildcardChild (for root-level wildcards like ".>A")
     const rootWildcards = Array.from(this.sequenceTree.values()).filter(n => n.wildcardChild)
     this.currentWildcard = rootWildcards.length > 0 ? rootWildcards[0].wildcardChild : undefined
     this.playedMoves = []
