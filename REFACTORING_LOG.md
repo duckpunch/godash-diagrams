@@ -1,12 +1,12 @@
 # Refactoring Log
 
-## Phase 1: Extract CaptureBar Component ✅
+## Phase 1: Extract CaptureBar Component ✅ COMPLETE
 
 ### Date
 2026-01-03
 
 ### Summary
-Successfully extracted the CaptureBar component from the monolithic model.ts file, reducing code duplication and improving testability.
+Successfully extracted the CaptureBar component from the monolithic model.ts file, completely eliminating code duplication across all three diagram types (ProblemDiagram, FreeplayDiagram, ReplayDiagram) and improving testability.
 
 ### Changes Made
 
@@ -32,13 +32,27 @@ Successfully extracted the CaptureBar component from the monolithic model.ts fil
 
 #### Files Modified
 1. **src/lib/model.ts**
-   - Added import: `import { renderCaptureBar } from './ui/CaptureBar'`
-   - **Removed 7 lines** from ProblemDiagram.render():
-     - Icon definitions (whiteCaptureIcon, blackCaptureIcon)
-     - Style definitions (captureBarStyle, captureItemStyle, captureNumberStyle)
-   - **Removed 11 lines** of HTML generation code
-   - **Added 5 lines** calling renderCaptureBar()
+   - Added import: `import { renderCaptureBar, renderMoveCounter } from './ui/CaptureBar'`
+
+   **ProblemDiagram:**
+   - **Removed 7 lines**: Icon and style definitions
+   - **Removed 11 lines**: HTML generation code
+   - **Added 5 lines**: Call to renderCaptureBar()
    - **Net reduction: 13 lines**
+
+   **FreeplayDiagram:**
+   - **Removed 9 lines**: Icon definitions, inline move counter, style definitions
+   - **Removed 13 lines**: HTML generation code
+   - **Added 7 lines**: Move count calculation and renderCaptureBar() call
+   - **Net reduction: 15 lines**
+
+   **ReplayDiagram:**
+   - **Removed 9 lines**: Icon definitions, inline move counter, style definitions
+   - **Removed 13 lines**: HTML generation code
+   - **Added 7 lines**: Move count calculation and renderCaptureBar() call
+   - **Net reduction: 15 lines**
+
+   **Total reduction: 55 lines from model.ts** (including whitespace cleanup)
 
 ### Metrics
 
@@ -48,9 +62,9 @@ Successfully extracted the CaptureBar component from the monolithic model.ts fil
 - Test coverage: 0%
 
 **After:**
-- model.ts: 1,462 lines (-13 lines, -0.9%)
+- model.ts: 1,420 lines (-55 lines, -3.7%)
 - New files: 3 files, 299 lines total
-- Code duplication: Eliminated from ProblemDiagram (2 more to go)
+- Code duplication: **Completely eliminated** - all 3 diagrams now use CaptureBar
 - Test coverage: 100% for CaptureBar (16/16 tests passing)
 
 **Test Results:**
@@ -71,20 +85,14 @@ Successfully extracted the CaptureBar component from the monolithic model.ts fil
 
 ### Next Steps
 
-**Remaining duplicates to eliminate:**
-1. FreeplayDiagram - Update to use renderCaptureBar() with move counter
-2. ReplayDiagram - Update to use renderCaptureBar() with move counter
+**Phase 1 Complete! ✅**
+All three diagrams (ProblemDiagram, FreeplayDiagram, ReplayDiagram) now use the extracted CaptureBar component.
 
-**Estimated impact:**
-- Reduce model.ts by another ~26 lines
-- Eliminate all capture bar duplication
-- Consistent styling across all diagrams
-
-**Future extractions (from REFACTORING_PLAN.md):**
-1. TurnIndicator component
-2. ButtonBar component
-3. Game logic (KoRule, CaptureCounter, etc.)
-4. Split diagram classes into separate files
+**Ready for Phase 2 (from REFACTORING_PLAN.md):**
+1. **TurnIndicator component** - Duplicated in Freeplay, Replay, and Problem diagrams
+2. **ButtonBar component** - Navigation buttons duplicated across diagrams
+3. **Game logic** - Ko rule, capture counting, move validation
+4. **Split diagram classes** - One file per diagram type
 
 ### Code Quality
 
@@ -117,6 +125,29 @@ output += renderCaptureBar({
 
 **Reduction:** 18 lines → 5 lines (72% reduction)
 
+**FreeplayDiagram and ReplayDiagram (with move counter):**
+```typescript
+// Before: 22 lines of duplicated code
+const whiteCaptureIcon = '<svg width="24"...'
+const blackCaptureIcon = '<svg width="24"...'
+const currentMove = this.currentMoveIndex + 1
+const totalMoves = this.moveSequence.length
+const moveCounter = `<div style="color: #616161; font-size: 0.9rem; font-weight: 500;">${currentMove} / ${totalMoves}</div>`
+// ... 17 more lines of HTML generation
+
+// After: 7 lines
+const currentMove = this.currentMoveIndex + 1
+const totalMoves = this.moveSequence.length
+output += renderCaptureBar({
+  whiteCaptured: this.whiteCaptured,
+  blackCaptured: this.blackCaptured,
+  rightContent: renderMoveCounter(currentMove, totalMoves),
+  marginDirection: 'top',
+})
+```
+
+**Reduction:** 22 lines → 7 lines (68% reduction per diagram)
+
 ### Lessons Learned
 
 1. **Start small**: Extracting one component at a time is manageable
@@ -130,6 +161,7 @@ output += renderCaptureBar({
 - [x] Component is pure function (no side effects)
 - [x] 100% test coverage for extracted code
 - [x] Existing functionality preserved (build passes)
-- [x] Code duplication reduced (1/3 eliminated)
+- [x] Code duplication **completely eliminated** (3/3 diagrams updated)
 - [x] Clear API with documentation
 - [x] Type-safe implementation
+- [x] Consistent styling across all diagrams
