@@ -5,6 +5,7 @@ import { validateBoard, parseOptions } from './validate'
 import { boardToSvg } from './render'
 import { renderCaptureBar, renderMoveCounter } from './ui/CaptureBar'
 import { renderButtonBar } from './ui/ButtonBar'
+import { renderTurnIndicator, renderResultIcon } from './ui/TurnIndicator'
 import { ICONS } from './ui/icons'
 
 export const ProblemResult = {
@@ -706,18 +707,13 @@ export class ProblemDiagram implements IDiagram {
     let leftIndicator = ''
     if (this.result === ProblemResult.Incomplete) {
       // Show turn indicator when game is in progress
-      const isBlackTurn = this.isBlackTurn
-      const stoneColor = isBlackTurn ? '#000000' : '#ffffff'
-      const stoneBorder = isBlackTurn ? 'none' : '2px solid #424242'
-      leftIndicator = `<div style="width: 28px; height: 28px; border-radius: 50%; background: ${stoneColor}; border: ${stoneBorder};" title="${isBlackTurn ? 'Black' : 'White'} to play"></div>`
+      leftIndicator = renderTurnIndicator(this.isBlackTurn)
     } else if (this.result === ProblemResult.Success) {
       // Show check icon when successful
-      const iconStyle = 'display: flex; align-items: center; justify-content: center; min-width: 28px; height: 28px;'
-      leftIndicator = `<div style="${iconStyle}">${ICONS.check}</div>`
+      leftIndicator = renderResultIcon('success')
     } else if (this.result === ProblemResult.Failure) {
       // Show x icon when failed
-      const iconStyle = 'display: flex; align-items: center; justify-content: center; min-width: 28px; height: 28px;'
-      leftIndicator = `<div style="${iconStyle}">${ICONS.x}</div>`
+      leftIndicator = renderResultIcon('failure')
     }
 
     // Dynamic bar styling based on result
@@ -1016,14 +1012,9 @@ export class FreeplayDiagram implements IDiagram {
     const passButtonId = `pass-${Math.random().toString(36).substr(2, 9)}`
     const resetButtonId = `reset-${Math.random().toString(36).substr(2, 9)}`
 
-    // Turn indicator circle
-    const stoneColor = this.isBlackTurn ? '#000000' : '#ffffff'
-    const stoneBorder = this.isBlackTurn ? 'none' : '2px solid #424242'
-    const turnIndicator = `<div style="width: 28px; height: 28px; border-radius: 50%; background: ${stoneColor}; border: ${stoneBorder};" title="${this.isBlackTurn ? 'Black' : 'White'} to play"></div>`
-
     let output = `<div class="freeplay-container">`
     output += renderButtonBar({
-      leftContent: turnIndicator,
+      leftContent: renderTurnIndicator(this.isBlackTurn),
       buttons: [
         { id: undoButtonId, icon: ICONS.undo, title: 'Undo', disabled: this.currentMoveIndex < 0 },
         { id: redoButtonId, icon: ICONS.redo, title: 'Redo', disabled: this.currentMoveIndex >= this.history.length - 1 },
@@ -1335,15 +1326,9 @@ export class ReplayDiagram implements IDiagram {
       }
     }
 
-    // Turn indicator circle
-    const isBlackTurn = nextToPlay === BLACK
-    const stoneColor = isBlackTurn ? '#000000' : '#ffffff'
-    const stoneBorder = isBlackTurn ? 'none' : '2px solid #424242'
-    const turnIndicator = `<div style="width: 28px; height: 28px; border-radius: 50%; background: ${stoneColor}; border: ${stoneBorder};" title="${isBlackTurn ? 'Black' : 'White'} to play"></div>`
-
     let output = `<div class="replay-container">`
     output += renderButtonBar({
-      leftContent: turnIndicator,
+      leftContent: renderTurnIndicator(nextToPlay === BLACK),
       buttons: [
         { id: firstButtonId, icon: ICONS.first, title: 'First', disabled: this.currentMoveIndex < 0 },
         { id: prevButtonId, icon: ICONS.previous, title: 'Previous', disabled: this.currentMoveIndex < 0 },

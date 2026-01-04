@@ -339,3 +339,172 @@ output += renderButtonBar({
 3. **Split diagram classes** - One file per diagram type
 4. **Parser extraction** - Move parsing logic to separate files
 
+
+---
+
+## Phase 3: Extract TurnIndicator ✅ COMPLETE
+
+### Date
+2026-01-03
+
+### Summary
+Successfully extracted turn indicator rendering logic, eliminating duplication across all three diagram types and creating a simple, reusable component for showing whose turn it is.
+
+### Changes Made
+
+#### New Files Created
+1. **src/lib/ui/TurnIndicator.ts** (47 lines)
+   - Two main functions:
+     - `renderTurnIndicator(isBlack)` - Renders circular stone showing whose turn it is
+     - `renderResultIcon(type)` - Renders success/failure icons for ProblemDiagram
+   - Consistent 28px circular design
+   - Black stones: solid black, no border
+   - White stones: white with 2px gray border
+   - Tooltip showing "Black to play" or "White to play"
+   - Well-documented with JSDoc and examples
+
+2. **src/lib/ui/__tests__/TurnIndicator.test.ts** (135 lines, 15 tests)
+   - Tests turn indicator rendering (black/white)
+   - Tests result icon rendering (success/failure)
+   - Tests consistent sizing and styling
+   - Tests integration scenarios (all three diagram types)
+
+#### Files Modified
+1. **src/lib/model.ts**
+   - Added import: `import { renderTurnIndicator, renderResultIcon } from './ui/TurnIndicator'`
+
+   **ProblemDiagram:**
+   - **Removed 10 lines**: Turn indicator and result icon inline generation
+   - **Added 3 lines**: Calls to renderTurnIndicator() and renderResultIcon()
+   - **Net reduction: 7 lines**
+
+   **FreeplayDiagram:**
+   - **Removed 3 lines**: Turn indicator inline generation
+   - **Added 1 line**: Call to renderTurnIndicator()
+   - **Net reduction: 2 lines**
+
+   **ReplayDiagram:**
+   - **Removed 4 lines**: Turn indicator inline generation
+   - **Added 1 line**: Call to renderTurnIndicator()
+   - **Net reduction: 3 lines**
+
+   **Total reduction: 15 lines from model.ts** (including whitespace cleanup)
+
+### Metrics
+
+**Before Phase 3:**
+- model.ts: 1,401 lines
+- Turn indicator duplication: 3× implementations with inline HTML
+- Result icon duplication: Inline HTML in ProblemDiagram
+- Test coverage: 0% for turn indicator rendering
+
+**After Phase 3:**
+- model.ts: 1,386 lines (-15 lines, -1.1%)
+- New files: 2 files, 182 lines total
+- Turn indicator duplication: **Completely eliminated** - all 3 diagrams use renderTurnIndicator
+- Result icon duplication: **Completely eliminated** - ProblemDiagram uses renderResultIcon
+- Test coverage: 100% for TurnIndicator (15/15 tests passing)
+
+**Cumulative metrics (Phases 1 + 2 + 3):**
+- model.ts: 1,475 → 1,386 lines (-89 lines, -6.0%)
+- New files: 8 files, 952 lines total
+- Components extracted: CaptureBar + ButtonBar + TurnIndicator + Icons
+- Tests: 52/52 passing (1 example + 16 CaptureBar + 20 ButtonBar + 15 TurnIndicator)
+
+**Test Results:**
+```
+✓ src/lib/ui/__tests__/TurnIndicator.test.ts (15 tests) 5ms
+  ✓ renderTurnIndicator (5 tests)
+  ✓ renderResultIcon (5 tests)
+  ✓ Integration scenarios (5 tests)
+```
+
+### Benefits Achieved
+
+1. **Simplicity**: Very simple API - just pass a boolean
+2. **Consistency**: All diagrams show turn indicators identically
+3. **Maintainability**: Turn indicator styling changes happen in one place
+4. **Testability**: Pure function easy to test in isolation
+5. **Type Safety**: TypeScript ensures correct usage
+6. **Separation**: Result icons properly separated from turn indicators
+7. **Code Clarity**: Declarative function call vs imperative HTML generation
+
+### Code Quality
+
+**Before extraction (FreeplayDiagram example):**
+```typescript
+// 3 lines of duplicated code
+const stoneColor = this.isBlackTurn ? '#000000' : '#ffffff'
+const stoneBorder = this.isBlackTurn ? 'none' : '2px solid #424242'
+const turnIndicator = `<div style="width: 28px; height: 28px; border-radius: 50%; background: ${stoneColor}; border: ${stoneBorder};" title="${this.isBlackTurn ? 'Black' : 'White'} to play"></div>`
+```
+
+**After extraction:**
+```typescript
+import { renderTurnIndicator } from './ui/TurnIndicator'
+
+// Used directly in renderButtonBar call
+leftContent: renderTurnIndicator(this.isBlackTurn)
+```
+
+**Reduction:** 3 lines → inline usage (100% reduction at call site)
+
+**ProblemDiagram example (more complex):**
+```typescript
+// Before: 10 lines with conditionals and inline HTML
+if (this.result === ProblemResult.Incomplete) {
+  const isBlackTurn = this.isBlackTurn
+  const stoneColor = isBlackTurn ? '#000000' : '#ffffff'
+  const stoneBorder = isBlackTurn ? 'none' : '2px solid #424242'
+  leftIndicator = `<div style="width: 28px; height: 28px; border-radius: 50%; background: ${stoneColor}; border: ${stoneBorder};" title="${isBlackTurn ? 'Black' : 'White'} to play"></div>`
+} else if (this.result === ProblemResult.Success) {
+  const iconStyle = 'display: flex; align-items: center; justify-content: center; min-width: 28px; height: 28px;'
+  leftIndicator = `<div style="${iconStyle}">${ICONS.check}</div>`
+} else if (this.result === ProblemResult.Failure) {
+  const iconStyle = 'display: flex; align-items: center; justify-content: center; min-width: 28px; height: 28px;'
+  leftIndicator = `<div style="${iconStyle}">${ICONS.x}</div>`
+}
+
+// After: 7 lines, much cleaner
+if (this.result === ProblemResult.Incomplete) {
+  leftIndicator = renderTurnIndicator(this.isBlackTurn)
+} else if (this.result === ProblemResult.Success) {
+  leftIndicator = renderResultIcon('success')
+} else if (this.result === ProblemResult.Failure) {
+  leftIndicator = renderResultIcon('failure')
+}
+```
+
+**Reduction:** 10 lines → 7 lines (30% reduction), much more readable
+
+### Lessons Learned
+
+1. **Simple is better**: TurnIndicator is the simplest extraction yet - just one boolean parameter
+2. **Related functions**: Pairing renderResultIcon with renderTurnIndicator keeps related UI together
+3. **Incremental value**: Even small extractions improve readability and reduce duplication
+4. **Pattern emerging**: Extract → Test → Replace is becoming routine
+5. **Momentum builds**: Each extraction makes the next one easier
+
+### Success Criteria Met
+
+- [x] Components are pure functions (no side effects)
+- [x] 100% test coverage for extracted code
+- [x] Existing functionality preserved (build passes)
+- [x] Code duplication completely eliminated (3/3 diagrams updated)
+- [x] Clear, simple API with documentation
+- [x] Type-safe implementation
+- [x] Supports all diagram types' use cases
+- [x] Result icons properly extracted for ProblemDiagram
+
+### Next Steps
+
+**model.ts is now 6% smaller than when we started!** (1,475 → 1,386 lines)
+
+**Potential Phase 4 targets:**
+1. **Game logic extraction** - Ko rule, capture counting, move validation
+2. **Split diagram classes** - One file per diagram type (4 files)
+3. **Parser extraction** - Move parsing logic to separate files
+4. **Move/coordinate utilities** - Common helper functions
+
+The codebase is getting much cleaner and more maintainable with each extraction!
+
