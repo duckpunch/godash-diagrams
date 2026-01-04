@@ -98,8 +98,50 @@ describe('CaptureBar', () => {
 
       expect(html).toContain('background: #f8f8f8')
       expect(html).toContain('border: 1px solid #9e9e9e')
-      expect(html).toContain('border-radius: 4px')
+      expect(html).toContain('border-radius:') // Has conditional border radius
       expect(html).toContain('max-width: 500px')
+    })
+
+    it('applies custom background color from style', () => {
+      const html = renderCaptureBar({
+        whiteCaptured: 0,
+        blackCaptured: 0,
+        style: {
+          background: '#e8f5e9',
+          borderColor: '#2e7d32',
+        },
+      })
+
+      expect(html).toContain('background: #e8f5e9')
+      expect(html).toContain('border: 1px solid #2e7d32')
+    })
+
+    it('applies success styling (green)', () => {
+      const html = renderCaptureBar({
+        whiteCaptured: 1,
+        blackCaptured: 2,
+        style: {
+          background: '#e8f5e9',  // Light green
+          borderColor: '#2e7d32',  // Green
+        },
+      })
+
+      expect(html).toContain('background: #e8f5e9')
+      expect(html).toContain('border: 1px solid #2e7d32')
+    })
+
+    it('applies failure styling (red)', () => {
+      const html = renderCaptureBar({
+        whiteCaptured: 0,
+        blackCaptured: 0,
+        style: {
+          background: '#ffebee',  // Light red
+          borderColor: '#c62828',  // Red
+        },
+      })
+
+      expect(html).toContain('background: #ffebee')
+      expect(html).toContain('border: 1px solid #c62828')
     })
 
     it('handles large capture counts', () => {

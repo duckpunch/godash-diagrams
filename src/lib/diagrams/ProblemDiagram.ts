@@ -587,11 +587,15 @@ export class ProblemDiagram implements IDiagram {
     })
     output += boardSvg
 
-    // Capture count bar (below board)
+    // Capture count bar (below board) with same styling as button bar
     output += renderCaptureBar({
       whiteCaptured: this.whiteCaptured,
       blackCaptured: this.blackCaptured,
       marginDirection: 'bottom',
+      style: {
+        background: barBackground,
+        borderColor: barBorderColor,
+      },
     })
 
     output += `</div>`

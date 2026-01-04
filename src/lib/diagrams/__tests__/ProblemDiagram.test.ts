@@ -557,6 +557,142 @@ describe('ProblemDiagram', () => {
     })
   })
 
+  describe('Result Styling', () => {
+    it('renders neutral styling for incomplete state', () => {
+      const element = createMockElement()
+      const lines = createBoardLines(`
+        problem
+
+        a b .
+        . . .
+        . . .
+
+        ---
+        solutions: a>b
+      `)
+
+      const diagram = new ProblemDiagram(element, lines)
+      diagram.render()
+
+      // Should have default neutral colors
+      expect(element.innerHTML).toContain('background: #f8f8f8')
+      expect(element.innerHTML).toContain('border: 1px solid #9e9e9e')
+    })
+
+    it('renders green styling for success state', () => {
+      const element = createMockElement()
+      const lines = createBoardLines(`
+        problem
+
+        a . .
+        . . .
+        . . .
+
+        ---
+        solutions: a
+      `)
+
+      const diagram = new ProblemDiagram(element, lines)
+      diagram.render()
+
+      // Simulate successful move
+      // Access private method through type assertion for testing
+      const handleMove = (diagram as any).handleUserMove.bind(diagram)
+      const coord = { x: 0, y: 0, equals: (other: any) => other.x === 0 && other.y === 0 }
+      handleMove(coord)
+
+      // Should have success (green) colors
+      expect(element.innerHTML).toContain('background: #e8f5e9')
+      expect(element.innerHTML).toContain('border: 1px solid #2e7d32')
+    })
+
+    it('renders red styling for failure state', () => {
+      const element = createMockElement()
+      const lines = createBoardLines(`
+        problem
+
+        a b .
+        . . .
+        . . .
+
+        ---
+        solutions: a
+      `)
+
+      const diagram = new ProblemDiagram(element, lines)
+      diagram.render()
+
+      // Simulate wrong move (b instead of a)
+      const handleMove = (diagram as any).handleUserMove.bind(diagram)
+      const coord = { x: 0, y: 1, equals: (other: any) => other.x === 0 && other.y === 1 }
+      handleMove(coord)
+
+      // Should have failure (red) colors
+      expect(element.innerHTML).toContain('background: #ffebee')
+      expect(element.innerHTML).toContain('border: 1px solid #c62828')
+    })
+
+    it('applies styling to both ButtonBar and CaptureBar on success', () => {
+      const element = createMockElement()
+      const lines = createBoardLines(`
+        problem
+
+        a . .
+        . . .
+        . . .
+
+        ---
+        solutions: a
+      `)
+
+      const diagram = new ProblemDiagram(element, lines)
+      diagram.render()
+
+      // Simulate successful move
+      const handleMove = (diagram as any).handleUserMove.bind(diagram)
+      const coord = { x: 0, y: 0, equals: (other: any) => other.x === 0 && other.y === 0 }
+      handleMove(coord)
+
+      const html = element.innerHTML
+      // Count occurrences of success colors (should appear in both bars)
+      const greenBgCount = (html.match(/background: #e8f5e9/g) || []).length
+      const greenBorderCount = (html.match(/border: 1px solid #2e7d32/g) || []).length
+
+      expect(greenBgCount).toBeGreaterThanOrEqual(2) // Both ButtonBar and CaptureBar
+      expect(greenBorderCount).toBeGreaterThanOrEqual(2)
+    })
+
+    it('applies styling to both ButtonBar and CaptureBar on failure', () => {
+      const element = createMockElement()
+      const lines = createBoardLines(`
+        problem
+
+        a b .
+        . . .
+        . . .
+
+        ---
+        solutions: a
+      `)
+
+      const diagram = new ProblemDiagram(element, lines)
+      diagram.render()
+
+      // Simulate wrong move
+      const handleMove = (diagram as any).handleUserMove.bind(diagram)
+      const coord = { x: 0, y: 1, equals: (other: any) => other.x === 0 && other.y === 1 }
+      handleMove(coord)
+
+      const html = element.innerHTML
+      // Count occurrences of failure colors (should appear in both bars)
+      const redBgCount = (html.match(/background: #ffebee/g) || []).length
+      const redBorderCount = (html.match(/border: 1px solid #c62828/g) || []).length
+
+      expect(redBgCount).toBeGreaterThanOrEqual(2) // Both ButtonBar and CaptureBar
+      expect(redBorderCount).toBeGreaterThanOrEqual(2)
+    })
+  })
+
   describe('Edge Cases', () => {
     it('handles empty initial board', () => {
       const element = createMockElement()

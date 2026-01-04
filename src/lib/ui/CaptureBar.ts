@@ -8,6 +8,16 @@ const CAPTURE_ICONS = {
   black: '<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="8" fill="black" stroke="black" stroke-width="1.5"/><line x1="3" y1="3" x2="21" y2="21" stroke="red" stroke-width="2" stroke-linecap="round"/><line x1="21" y1="3" x2="3" y2="21" stroke="red" stroke-width="2" stroke-linecap="round"/></svg>',
 } as const
 
+/**
+ * Capture bar styling options
+ */
+export interface CaptureBarStyle {
+  /** Background color of the bar */
+  background?: string
+  /** Border color of the bar */
+  borderColor?: string
+}
+
 export interface CaptureBarOptions {
   /** Number of white stones captured */
   whiteCaptured: number
@@ -17,6 +27,8 @@ export interface CaptureBarOptions {
   rightContent?: string
   /** Margin direction: 'top' or 'bottom' */
   marginDirection?: 'top' | 'bottom'
+  /** Custom styling for the bar */
+  style?: CaptureBarStyle
 }
 
 /**
@@ -41,7 +53,10 @@ export interface CaptureBarOptions {
  * })
  */
 export function renderCaptureBar(options: CaptureBarOptions): string {
-  const { whiteCaptured, blackCaptured, rightContent, marginDirection = 'bottom' } = options
+  const { whiteCaptured, blackCaptured, rightContent, marginDirection = 'bottom', style } = options
+
+  const barBg = style?.background || COLORS.background
+  const barBorder = style?.borderColor || COLORS.border
 
   // Determine layout based on whether we have right content
   const justifyContent = rightContent ? 'space-between' : 'flex-start'
@@ -53,8 +68,8 @@ export function renderCaptureBar(options: CaptureBarOptions): string {
 
   // Bar container style
   const barStyle = [
-    `background: ${COLORS.background}`,
-    `border: 1px solid ${COLORS.border}`,
+    `background: ${barBg}`,
+    `border: 1px solid ${barBorder}`,
     borderRadiusStyle,
     `padding: ${SPACING.large}`,
     `margin-${marginDirection}: 0`,
