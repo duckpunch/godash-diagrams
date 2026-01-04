@@ -1,5 +1,5 @@
-- Ko
 - Copy board
 - Arrow support on focus
-- Better YAML parsing
 - Condensed subtrees for like-prefix problems
+- Annotations at any point
+- Comments
