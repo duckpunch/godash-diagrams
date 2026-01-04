@@ -7,7 +7,7 @@ import { renderCaptureBar, renderMoveCounter } from '../ui/CaptureBar'
 import { renderButtonBar } from '../ui/ButtonBar'
 import { renderTurnIndicator } from '../ui/TurnIndicator'
 import { ICONS } from '../ui/icons'
-import type { IDiagram, ParsedBoard, AnnotationInfo, ColorMode } from './types'
+import type { IDiagram, ParsedBoard, AnnotationInfo, ColorMode, AnnotationShape } from './types'
 import { countCapturesFromDiff } from './types'
 
 type HistoryEntry =
@@ -28,6 +28,9 @@ export class FreeplayDiagram implements IDiagram {
   private blackCaptured: number
   private ignoreKo: boolean
   private koPoint: Coordinate | null
+  private shapeMap: Map<string, AnnotationShape>
+  private blackMarkSet: Set<string>
+  private whiteMarkSet: Set<string>
 
   constructor(element: Element, lines: string[]) {
     this.element = element
@@ -59,8 +62,74 @@ export class FreeplayDiagram implements IDiagram {
     const ignoreKoOption = config['ignore-ko']
     this.ignoreKo = ignoreKoOption === 'true' || ignoreKoOption === true
 
-    this.initialBoard = this.parsedBoard.board
-    this.currentBoard = this.parsedBoard.board
+    // Parse black and white marks into arrays
+    const blackOption = config.black
+    const whiteOption = config.white
+
+    const blackMarks = blackOption
+      ? (Array.isArray(blackOption) ? blackOption : (typeof blackOption === 'string' ? blackOption.split(',').map(m => m.trim()).filter(m => m.length > 0) : []))
+      : []
+    const whiteMarks = whiteOption
+      ? (Array.isArray(whiteOption) ? whiteOption : (typeof whiteOption === 'string' ? whiteOption.split(',').map(m => m.trim()).filter(m => m.length > 0) : []))
+      : []
+
+    // Parse shape options
+    const triangleOption = config.triangle
+    const squareOption = config.square
+    const circleOption = config.circle
+    const xOption = config.x
+
+    const triangleMarks = triangleOption
+      ? (Array.isArray(triangleOption) ? triangleOption : (typeof triangleOption === 'string' ? triangleOption.split(',').map(m => m.trim()).filter(m => m.length > 0) : []))
+      : []
+    const squareMarks = squareOption
+      ? (Array.isArray(squareOption) ? squareOption : (typeof squareOption === 'string' ? squareOption.split(',').map(m => m.trim()).filter(m => m.length > 0) : []))
+      : []
+    const circleMarks = circleOption
+      ? (Array.isArray(circleOption) ? circleOption : (typeof circleOption === 'string' ? circleOption.split(',').map(m => m.trim()).filter(m => m.length > 0) : []))
+      : []
+    const xMarks = xOption
+      ? (Array.isArray(xOption) ? xOption : (typeof xOption === 'string' ? xOption.split(',').map(m => m.trim()).filter(m => m.length > 0) : []))
+      : []
+
+    // Build shape lookup
+    this.shapeMap = new Map<string, AnnotationShape>()
+    for (const mark of triangleMarks) {
+      this.shapeMap.set(mark, 'triangle')
+    }
+    for (const mark of squareMarks) {
+      this.shapeMap.set(mark, 'square')
+    }
+    for (const mark of circleMarks) {
+      this.shapeMap.set(mark, 'circle')
+    }
+    for (const mark of xMarks) {
+      this.shapeMap.set(mark, 'x')
+    }
+
+    // Store black and white mark sets for annotation filtering
+    this.blackMarkSet = new Set(blackMarks)
+    this.whiteMarkSet = new Set(whiteMarks)
+
+    // Add black and white marks as stones to the board
+    let board = parsed.board
+    for (const mark of blackMarks) {
+      if (parsed.otherMarks[mark]) {
+        for (const coord of parsed.otherMarks[mark]) {
+          board = addMove(board, Move(coord, BLACK))
+        }
+      }
+    }
+    for (const mark of whiteMarks) {
+      if (parsed.otherMarks[mark]) {
+        for (const coord of parsed.otherMarks[mark]) {
+          board = addMove(board, Move(coord, WHITE))
+        }
+      }
+    }
+
+    this.initialBoard = board
+    this.currentBoard = board
     this.history = []
     this.currentMoveIndex = -1
     // Set initial turn based on color mode
@@ -185,9 +254,12 @@ export class FreeplayDiagram implements IDiagram {
 
     // Add static annotations from board definition (otherMarks)
     for (const [mark, coordinates] of Object.entries(this.parsedBoard.otherMarks)) {
+      // Use specified shape or default to text
+      const shape = this.shapeMap.get(mark) || 'text'
+
       for (const coord of coordinates) {
         const key = `${coord.x},${coord.y}`
-        annotations.set(key, { label: mark, shape: 'text' })
+        annotations.set(key, { label: mark, shape })
       }
     }
 
