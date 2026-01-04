@@ -161,12 +161,17 @@ export function renderButtonBar(options: ButtonBarOptions): string {
   const barBg = style?.background || COLORS.background
   const barBorder = style?.borderColor || COLORS.border
 
+  // Set border radius based on margin direction (flat corners where it meets the board)
+  const borderRadiusStyle = marginDirection === 'bottom'
+    ? `border-radius: ${SIZES.borderRadius} ${SIZES.borderRadius} 0 0` // Round top, flat bottom
+    : `border-radius: 0 0 ${SIZES.borderRadius} ${SIZES.borderRadius}` // Flat top, round bottom
+
   const barStyle = [
     `background: ${barBg}`,
     `border: 1px solid ${barBorder}`,
-    `border-radius: ${SIZES.borderRadius}`,
+    borderRadiusStyle,
     `padding: ${SPACING.large}`,
-    `margin-${marginDirection}: ${SPACING.medium}`,
+    `margin-${marginDirection}: 0`,
     `display: flex`,
     `justify-content: space-between`,
     `align-items: center`,

@@ -46,13 +46,18 @@ export function renderCaptureBar(options: CaptureBarOptions): string {
   // Determine layout based on whether we have right content
   const justifyContent = rightContent ? 'space-between' : 'flex-start'
 
+  // Set border radius based on margin direction (flat corners where it meets the board)
+  const borderRadiusStyle = marginDirection === 'top'
+    ? `border-radius: ${SIZES.borderRadius} ${SIZES.borderRadius} 0 0` // Round top, flat bottom
+    : `border-radius: 0 0 ${SIZES.borderRadius} ${SIZES.borderRadius}` // Flat top, round bottom
+
   // Bar container style
   const barStyle = [
     `background: ${COLORS.background}`,
     `border: 1px solid ${COLORS.border}`,
-    `border-radius: ${SIZES.borderRadius}`,
+    borderRadiusStyle,
     `padding: ${SPACING.large}`,
-    `margin-${marginDirection}: ${SPACING.medium}`,
+    `margin-${marginDirection}: 0`,
     `display: flex`,
     `justify-content: ${justifyContent}`,
     `align-items: center`,
