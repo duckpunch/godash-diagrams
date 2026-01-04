@@ -1,6 +1,6 @@
 {
   "name": "godash-diagrams",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "A diagramming library for Go, inspired by Mermaid, and built on Godash",
   "author": {
     "name": "duckpunch",
