@@ -1,39 +1,12 @@
 import { Board, Move, Coordinate, BLACK, WHITE, EMPTY, placeStone } from 'godash'
 import type { ParsedBoard } from './model'
+import { parseYaml, extractYamlSection } from './parseYaml'
 
 export class ValidationError extends Error {
   constructor(message: string) {
     super(message)
     this.name = 'ValidationError'
   }
-}
-
-export function parseOptions(lines: string[], startIndex: number): Record<string, string | string[]> {
-  const parsedOptions: Record<string, string | string[]> = {}
-  let lastKey: string | null = null
-  let lastKeyHadEmptyValue = false
-
-  for (let i = startIndex; i < lines.length; i++) {
-    const line = lines[i].trim()
-    if (line === '') continue
-
-    const colonIndex = line.indexOf(':')
-    if (colonIndex > 0) {
-      const key = line.substring(0, colonIndex).trim()
-      const value = line.substring(colonIndex + 1).trim()
-      parsedOptions[key] = value
-      lastKey = key
-      lastKeyHadEmptyValue = value === ''
-    } else if (lastKey && lastKeyHadEmptyValue) {
-      // Line without colon and previous option started with empty value - add to array
-      if (Array.isArray(parsedOptions[lastKey])) {
-        (parsedOptions[lastKey] as string[]).push(line)
-      } else {
-        parsedOptions[lastKey] = [line]
-      }
-    }
-  }
-  return parsedOptions
 }
 
 export function validateBoardRows(lines: string[], startIndex: number): [number, number] {
@@ -109,15 +82,19 @@ export function validateBoard(lines: string[], options: ValidateBoardOptions = {
     boardEndIndex = i + 1
   }
 
-  // Parse options (YAML-like syntax after board definition)
-  const parsedOptions = parseOptions(lines, boardEndIndex)
+  // Parse YAML configuration
+  const yamlContent = extractYamlSection(lines, boardEndIndex)
+  const config = yamlContent ? parseYaml(yamlContent) : {}
 
   // Validate size option if present
   let boardSize: number | undefined
-  if (parsedOptions.size) {
-    const sizeOption = parsedOptions.size
-    if (Array.isArray(sizeOption)) {
+  if (config.size) {
+    const sizeOption = config.size
+    if (Array.isArray(sizeOption) || typeof sizeOption === 'object') {
       throw new ValidationError('Size option cannot have multiple values')
+    }
+    if (typeof sizeOption === 'boolean') {
+      throw new ValidationError('Size must be a number')
     }
     const sizeValue = parseInt(sizeOption, 10)
     if (isNaN(sizeValue) || sizeValue <= 1 || sizeValue > 19) {

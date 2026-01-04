@@ -18,16 +18,21 @@ const EXAMPLES = {
 .  .  C  .  .  B  .  .  .
 .  .  .  .  .  .  .  .  .
 
-black: A,B
-white: D
-triangle: C
-area-colors: r=red, b=blue
+---
+black: [A, B]
+white: [D]
+triangle: [C]
+area-colors:
+  r: red
+  b: blue
 `,
 
   freeplay: `freeplay
 
-size: 9
-numbered: true`,
+---
+color: alternate
+numbered: true
+`,
 
   problem: `problem
 
@@ -37,18 +42,17 @@ O O O X X X .
 X X X . . . .
 . . . . . . .
 
-size: 19
+---
 to-play: black
-
-sequences:
-  f>d>e>b
-  c>b>a
-  a>b>f>d
-  d>c
-  *>d
-
 solutions:
-  a>b>d`,
+  - a>b>d
+sequences:
+  - f>d>e>b
+  - c>b>a
+  - a>b>f>d
+  - d>c
+  - "*>d"
+`,
 
   replay: `replay
 
@@ -60,7 +64,8 @@ solutions:
 .  . 10  8  6  .  .  .  .
 .  .  4  7  5  .  2  .  .
 . 11  9  .  .  .  .  .  .
-.  .  .  .  .  .  .  .  .`
+.  .  .  .  .  .  .  .  .
+`
 }
 
 const textarea = document.querySelector<HTMLTextAreaElement>('#source-input')!

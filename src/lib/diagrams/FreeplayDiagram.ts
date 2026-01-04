@@ -1,6 +1,7 @@
 import type { Color } from 'godash'
 import { Board, Move, Coordinate, BLACK, WHITE, isLegalMove, addMove, followupKo } from 'godash'
-import { validateBoard, parseOptions } from '../validate'
+import { validateBoard } from '../validate'
+import { parseYaml, extractYamlSection } from '../parseYaml'
 import { boardToSvg } from '../render'
 import { renderCaptureBar, renderMoveCounter } from '../ui/CaptureBar'
 import { renderButtonBar } from '../ui/ButtonBar'
@@ -35,13 +36,14 @@ export class FreeplayDiagram implements IDiagram {
     const parsed = validateBoard(lines, { allowEmpty: true })
     this.parsedBoard = parsed
 
-    // Parse options
-    const parsedOptions = parseOptions(lines, parsed.configStartIndex)
+    // Parse YAML configuration
+    const yamlContent = extractYamlSection(lines, parsed.configStartIndex)
+    const config = yamlContent ? parseYaml(yamlContent) : {}
 
     // Parse color option (default to "alternate")
-    const colorOption = parsedOptions.color
+    const colorOption = config.color
     const colorValue = colorOption
-      ? (Array.isArray(colorOption) ? colorOption[0] : colorOption).toLowerCase()
+      ? (Array.isArray(colorOption) ? colorOption[0] : (typeof colorOption === 'string' ? colorOption : 'alternate')).toLowerCase()
       : 'alternate'
 
     if (colorValue !== 'black' && colorValue !== 'white' && colorValue !== 'alternate') {
@@ -50,12 +52,12 @@ export class FreeplayDiagram implements IDiagram {
     this.colorMode = colorValue as ColorMode
 
     // Parse numbered option (default to false)
-    const numberedOption = parsedOptions.numbered
-    this.numbered = numberedOption === 'true' || numberedOption === '1'
+    const numberedOption = config.numbered
+    this.numbered = numberedOption === 'true' || numberedOption === true
 
     // Parse ignore-ko option (default to false)
-    const ignoreKoOption = parsedOptions['ignore-ko']
-    this.ignoreKo = ignoreKoOption === 'true' || ignoreKoOption === '1'
+    const ignoreKoOption = config['ignore-ko']
+    this.ignoreKo = ignoreKoOption === 'true' || ignoreKoOption === true
 
     this.initialBoard = this.parsedBoard.board
     this.currentBoard = this.parsedBoard.board

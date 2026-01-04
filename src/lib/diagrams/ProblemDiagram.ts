@@ -1,7 +1,8 @@
 import type { Color } from 'godash'
 import { Board, Move, Coordinate, BLACK, WHITE, isLegalMove, addMove, followupKo } from 'godash'
 import { Map as ImmutableMap } from 'immutable'
-import { validateBoard, parseOptions } from '../validate'
+import { validateBoard } from '../validate'
+import { parseYaml, extractYamlSection } from '../parseYaml'
 import { boardToSvg } from '../render'
 import { renderCaptureBar } from '../ui/CaptureBar'
 import { renderButtonBar } from '../ui/ButtonBar'
@@ -38,18 +39,19 @@ export class ProblemDiagram implements IDiagram {
       }
     }
 
-    // Parse options for black and white marks
-    const parsedOptions = parseOptions(lines, parsed.configStartIndex)
+    // Parse YAML configuration
+    const yamlContent = extractYamlSection(lines, parsed.configStartIndex)
+    const config = yamlContent ? parseYaml(yamlContent) : {}
 
     // Parse black and white marks into arrays
-    const blackOption = parsedOptions.black
-    const whiteOption = parsedOptions.white
+    const blackOption = config.black
+    const whiteOption = config.white
 
     const blackMarks = blackOption
-      ? (Array.isArray(blackOption) ? blackOption : blackOption.split(',').map(m => m.trim()).filter(m => m.length > 0))
+      ? (Array.isArray(blackOption) ? blackOption : (typeof blackOption === 'string' ? blackOption.split(',').map(m => m.trim()).filter(m => m.length > 0) : []))
       : []
     const whiteMarks = whiteOption
-      ? (Array.isArray(whiteOption) ? whiteOption : whiteOption.split(',').map(m => m.trim()).filter(m => m.length > 0))
+      ? (Array.isArray(whiteOption) ? whiteOption : (typeof whiteOption === 'string' ? whiteOption.split(',').map(m => m.trim()).filter(m => m.length > 0) : []))
       : []
 
     // Validate that black and white marks are disjoint sets
@@ -73,9 +75,9 @@ export class ProblemDiagram implements IDiagram {
     }
 
     // Parse to-play option (default to black)
-    const toPlayOption = parsedOptions['to-play']
+    const toPlayOption = config['to-play']
     const toPlayValue = toPlayOption
-      ? (Array.isArray(toPlayOption) ? toPlayOption[0] : toPlayOption).toLowerCase()
+      ? (Array.isArray(toPlayOption) ? toPlayOption[0] : (typeof toPlayOption === 'string' ? toPlayOption : '')).toLowerCase()
       : ''
     if (toPlayValue && toPlayValue !== 'black' && toPlayValue !== 'white') {
       throw new Error(`Invalid to-play value '${toPlayValue}'. Must be 'black' or 'white'`)
@@ -83,8 +85,8 @@ export class ProblemDiagram implements IDiagram {
     this.toPlay = toPlayValue === 'white' ? WHITE : BLACK
 
     // Parse ignore-ko option (default to false)
-    const ignoreKoOption = parsedOptions['ignore-ko']
-    this.ignoreKo = ignoreKoOption === 'true' || ignoreKoOption === '1'
+    const ignoreKoOption = config['ignore-ko']
+    this.ignoreKo = ignoreKoOption === 'true' || ignoreKoOption === true
 
     // Add black and white marks as stones to the board
     let board = parsed.board
@@ -174,10 +176,10 @@ export class ProblemDiagram implements IDiagram {
     }
 
     // Parse and validate solutions
-    const solutionsOption = parsedOptions.solutions
+    const solutionsOption = config.solutions
     const allSequences: Array<{ sequence: string, isSolution: boolean }> = []
-    if (solutionsOption) {
-      const solutions = Array.isArray(solutionsOption) ? solutionsOption : [solutionsOption]
+    if (solutionsOption && typeof solutionsOption !== 'boolean') {
+      const solutions = Array.isArray(solutionsOption) ? solutionsOption : (typeof solutionsOption === 'string' ? [solutionsOption] : [])
       for (const solution of solutions) {
         validateSequence(solution, 'Solution')
         allSequences.push({ sequence: solution, isSolution: true })
@@ -185,9 +187,9 @@ export class ProblemDiagram implements IDiagram {
     }
 
     // Parse and validate sequences
-    const sequencesOption = parsedOptions.sequences
-    if (sequencesOption) {
-      const sequences = Array.isArray(sequencesOption) ? sequencesOption : [sequencesOption]
+    const sequencesOption = config.sequences
+    if (sequencesOption && typeof sequencesOption !== 'boolean') {
+      const sequences = Array.isArray(sequencesOption) ? sequencesOption : (typeof sequencesOption === 'string' ? [sequencesOption] : [])
       for (const sequence of sequences) {
         validateSequence(sequence, 'Sequence')
         allSequences.push({ sequence: sequence, isSolution: false })

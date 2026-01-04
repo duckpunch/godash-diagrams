@@ -1,6 +1,7 @@
 import { Move, BLACK, WHITE, addMove } from 'godash'
-import { validateBoard, parseOptions } from '../validate'
+import { validateBoard } from '../validate'
 import { boardToSvg } from '../render'
+import { parseYaml, extractYamlSection } from '../parseYaml'
 import type { IDiagram, ParsedBoard, AnnotationInfo, AnnotationShape } from './types'
 
 export class StaticDiagram implements IDiagram {
@@ -30,36 +31,23 @@ export class StaticDiagram implements IDiagram {
       }
     }
 
-    // Parse options
-    const parsedOptions = parseOptions(lines, configStartIndex)
+    // Parse YAML configuration
+    const yamlContent = extractYamlSection(lines, configStartIndex)
+    const config = yamlContent ? parseYaml(yamlContent) : {}
 
     // Extract ignore-rules option (defaults to false)
-    const ignoreRulesOption = parsedOptions['ignore-rules']
-    const ignoreRules = ignoreRulesOption === 'true' || ignoreRulesOption === '1'
+    const ignoreRulesOption = config['ignore-rules']
+    const ignoreRules = ignoreRulesOption === 'true' || ignoreRulesOption === true || ignoreRulesOption === 'yes'
 
     // Parse area-colors option to build prefix -> color mapping
-    const areaColorsOption = parsedOptions['area-colors']
-    if (areaColorsOption) {
-      // Can be single line "r=red, b=blue" or multi-line array ["r=red", "b=blue"]
-      const colorEntries = Array.isArray(areaColorsOption) ? areaColorsOption : [areaColorsOption]
-
-      for (const entry of colorEntries) {
-        // Split on commas to handle "r=red, b=blue" format
-        const pairs = entry.split(',').map(s => s.trim()).filter(s => s.length > 0)
-
-        for (const pair of pairs) {
-          // Parse "prefix=color" format
-          const eqIndex = pair.indexOf('=')
-          if (eqIndex > 0) {
-            const prefix = pair.substring(0, eqIndex).trim()
-            const color = pair.substring(eqIndex + 1).trim()
-
-            if (prefix.length === 1 && /^[a-z]$/.test(prefix)) {
-              this.areaColors.set(prefix, color)
-            } else {
-              throw new Error(`Invalid area prefix '${prefix}'. Must be a single lowercase letter (a-z)`)
-            }
-          }
+    const areaColorsOption = config['area-colors']
+    if (areaColorsOption && typeof areaColorsOption === 'object' && !Array.isArray(areaColorsOption)) {
+      // YAML provides area-colors as an object: {r: red, b: blue}
+      for (const [prefix, color] of Object.entries(areaColorsOption)) {
+        if (prefix.length === 1 && /^[a-z]$/.test(prefix)) {
+          this.areaColors.set(prefix, color)
+        } else {
+          throw new Error(`Invalid area prefix '${prefix}'. Must be a single lowercase letter (a-z)`)
         }
       }
     }
@@ -71,33 +59,33 @@ export class StaticDiagram implements IDiagram {
     const parsed = validateBoard(lines, { ignoreRules, validateCharacters: false, validPrefixes })
 
     // Parse black and white marks from options
-    const blackOption = parsedOptions.black
-    const whiteOption = parsedOptions.white
+    const blackOption = config.black
+    const whiteOption = config.white
 
     const blackMarks = blackOption
-      ? (Array.isArray(blackOption) ? blackOption : blackOption.split(',').map(m => m.trim()).filter(m => m.length > 0))
+      ? (Array.isArray(blackOption) ? blackOption : (typeof blackOption === 'string' ? blackOption.split(',').map(m => m.trim()).filter(m => m.length > 0) : []))
       : []
     const whiteMarks = whiteOption
-      ? (Array.isArray(whiteOption) ? whiteOption : whiteOption.split(',').map(m => m.trim()).filter(m => m.length > 0))
+      ? (Array.isArray(whiteOption) ? whiteOption : (typeof whiteOption === 'string' ? whiteOption.split(',').map(m => m.trim()).filter(m => m.length > 0) : []))
       : []
 
     // Parse shape options
-    const triangleOption = parsedOptions.triangle
-    const squareOption = parsedOptions.square
-    const circleOption = parsedOptions.circle
-    const xOption = parsedOptions.x
+    const triangleOption = config.triangle
+    const squareOption = config.square
+    const circleOption = config.circle
+    const xOption = config.x
 
     const triangleMarks = triangleOption
-      ? (Array.isArray(triangleOption) ? triangleOption : triangleOption.split(',').map(m => m.trim()).filter(m => m.length > 0))
+      ? (Array.isArray(triangleOption) ? triangleOption : (typeof triangleOption === 'string' ? triangleOption.split(',').map(m => m.trim()).filter(m => m.length > 0) : []))
       : []
     const squareMarks = squareOption
-      ? (Array.isArray(squareOption) ? squareOption : squareOption.split(',').map(m => m.trim()).filter(m => m.length > 0))
+      ? (Array.isArray(squareOption) ? squareOption : (typeof squareOption === 'string' ? squareOption.split(',').map(m => m.trim()).filter(m => m.length > 0) : []))
       : []
     const circleMarks = circleOption
-      ? (Array.isArray(circleOption) ? circleOption : circleOption.split(',').map(m => m.trim()).filter(m => m.length > 0))
+      ? (Array.isArray(circleOption) ? circleOption : (typeof circleOption === 'string' ? circleOption.split(',').map(m => m.trim()).filter(m => m.length > 0) : []))
       : []
     const xMarks = xOption
-      ? (Array.isArray(xOption) ? xOption : xOption.split(',').map(m => m.trim()).filter(m => m.length > 0))
+      ? (Array.isArray(xOption) ? xOption : (typeof xOption === 'string' ? xOption.split(',').map(m => m.trim()).filter(m => m.length > 0) : []))
       : []
 
     // Build shape lookup

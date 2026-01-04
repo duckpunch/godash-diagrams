@@ -1,6 +1,7 @@
 import type { Color, Coordinate } from 'godash'
 import { Board, Move, BLACK, WHITE, addMove } from 'godash'
-import { validateBoard, parseOptions } from '../validate'
+import { validateBoard } from '../validate'
+import { parseYaml, extractYamlSection } from '../parseYaml'
 import { boardToSvg } from '../render'
 import { renderCaptureBar, renderMoveCounter } from '../ui/CaptureBar'
 import { renderButtonBar } from '../ui/ButtonBar'
@@ -33,13 +34,14 @@ export class ReplayDiagram implements IDiagram {
     this.whiteCaptured = 0
     this.blackCaptured = 0
 
-    // Parse options
-    const parsedOptions = parseOptions(lines, parsed.configStartIndex)
+    // Parse YAML configuration
+    const yamlContent = extractYamlSection(lines, parsed.configStartIndex)
+    const config = yamlContent ? parseYaml(yamlContent) : {}
 
     // Parse start-color option (default to black)
-    const startColorOption = parsedOptions['start-color']
+    const startColorOption = config['start-color']
     const startColorValue = startColorOption
-      ? (Array.isArray(startColorOption) ? startColorOption[0] : startColorOption).toLowerCase()
+      ? (Array.isArray(startColorOption) ? startColorOption[0] : (typeof startColorOption === 'string' ? startColorOption : 'black')).toLowerCase()
       : 'black'
 
     if (startColorValue !== 'black' && startColorValue !== 'white') {
@@ -48,14 +50,14 @@ export class ReplayDiagram implements IDiagram {
     const startColor = startColorValue === 'white' ? WHITE : BLACK
 
     // Parse show-numbers option (default to false)
-    const showNumbersOption = parsedOptions['show-numbers']
-    this.showNumbers = showNumbersOption === 'true' || showNumbersOption === '1'
+    const showNumbersOption = config['show-numbers']
+    this.showNumbers = showNumbersOption === 'true' || showNumbersOption === true
 
     // Parse initial-move option (default to 0)
-    const initialMoveOption = parsedOptions['initial-move']
+    const initialMoveOption = config['initial-move']
     let initialMove = 0
     if (initialMoveOption) {
-      const initialMoveValue = Array.isArray(initialMoveOption) ? initialMoveOption[0] : initialMoveOption
+      const initialMoveValue = Array.isArray(initialMoveOption) ? initialMoveOption[0] : (typeof initialMoveOption === 'string' ? initialMoveOption : '0')
       initialMove = parseInt(initialMoveValue, 10)
       if (isNaN(initialMove) || initialMove < 0) {
         throw new Error(`Invalid initial-move value '${initialMoveValue}'. Must be a non-negative integer`)
