@@ -71,4 +71,3 @@ export function init(selector?: string, options?: DiagramOptions): void {
 }
 
 // Export any other public functions/classes here
-export { version } from './version'

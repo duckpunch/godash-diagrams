@@ -1,8 +1,6 @@
 import './style.css'
 // Import your library (during dev, this imports from src/lib)
-import { init, version } from './lib/index'
-
-console.log(`Godash Diagrams v${version}`)
+import { init } from './lib/index'
 
 // Example sources for each diagram type - easy to tweak!
 const EXAMPLES = {
