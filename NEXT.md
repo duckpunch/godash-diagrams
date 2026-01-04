@@ -3,3 +3,4 @@
 - Condensed subtrees for like-prefix problems
 - Annotations at any point
 - Comments
+- 100% coverage
