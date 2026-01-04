@@ -71,6 +71,13 @@ export function validateBoard(lines: string[], options: ValidateBoardOptions = {
       break
     }
 
+    // Check for YAML separator
+    if (line.trim() === '---') {
+      // This is the start of YAML config, board definition has ended
+      boardEndIndex = i
+      break
+    }
+
     // Check if this line looks like an option (has colon)
     if (line.indexOf(':') > 0) {
       // This is the start of options, board definition has ended

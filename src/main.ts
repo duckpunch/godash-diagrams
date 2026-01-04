@@ -30,6 +30,7 @@ area-colors:
   freeplay: `freeplay
 
 ---
+size: 9
 color: alternate
 numbered: true
 `,

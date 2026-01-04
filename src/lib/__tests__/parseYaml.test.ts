@@ -39,8 +39,8 @@ describe('parseYaml', () => {
   it('parses boolean values', () => {
     const yaml = 'numbered: true\nignore-ko: false'
     expect(parseYaml(yaml)).toEqual({
-      numbered: 'true',
-      'ignore-ko': 'false'
+      numbered: true,
+      'ignore-ko': false
     })
   })
 
@@ -56,7 +56,7 @@ ignore-ko: true`
       'to-play': 'black',
       solutions: ['a>b>d'],
       sequences: ['f>d>e>b', 'c>b>a'],
-      'ignore-ko': 'true'
+      'ignore-ko': true
     })
   })
 
@@ -91,7 +91,7 @@ ignore-ko: true`
     const yaml = 'to-play: black\nignore-ko: true\nstart-color: white'
     expect(parseYaml(yaml)).toEqual({
       'to-play': 'black',
-      'ignore-ko': 'true',
+      'ignore-ko': true,
       'start-color': 'white'
     })
   })
