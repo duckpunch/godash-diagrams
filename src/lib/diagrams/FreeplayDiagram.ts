@@ -316,7 +316,7 @@ export class FreeplayDiagram implements IDiagram {
       whiteCaptured: this.whiteCaptured,
       blackCaptured: this.blackCaptured,
       rightContent: renderMoveCounter(moveCount),
-      marginDirection: 'top',
+      marginDirection: 'bottom',
     })
 
     output += `</div>`

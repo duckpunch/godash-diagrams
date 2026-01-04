@@ -243,7 +243,7 @@ export class ReplayDiagram implements IDiagram {
       whiteCaptured: this.whiteCaptured,
       blackCaptured: this.blackCaptured,
       rightContent: renderMoveCounter(currentMove, totalMoves),
-      marginDirection: 'top',
+      marginDirection: 'bottom',
     })
 
     output += `</div>`
