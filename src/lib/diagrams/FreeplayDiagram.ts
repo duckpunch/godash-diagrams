@@ -29,8 +29,6 @@ export class FreeplayDiagram implements IDiagram {
   private ignoreKo: boolean
   private koPoint: Coordinate | null
   private shapeMap: Map<string, AnnotationShape>
-  private blackMarkSet: Set<string>
-  private whiteMarkSet: Set<string>
 
   constructor(element: Element, lines: string[]) {
     this.element = element
@@ -106,10 +104,6 @@ export class FreeplayDiagram implements IDiagram {
     for (const mark of xMarks) {
       this.shapeMap.set(mark, 'x')
     }
-
-    // Store black and white mark sets for annotation filtering
-    this.blackMarkSet = new Set(blackMarks)
-    this.whiteMarkSet = new Set(whiteMarks)
 
     // Add black and white marks as stones to the board
     let board = parsed.board
