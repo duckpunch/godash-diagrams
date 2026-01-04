@@ -11,18 +11,9 @@ export function createMockElement(): HTMLDivElement {
 
 /**
  * Parse a multi-line board definition string into lines array
- * Ensures there's a blank line before --- separator for proper YAML parsing
  */
 export function createBoardLines(board: string): string[] {
-  const lines = board.trim().split('\n')
-
-  // Find --- separator and ensure blank line before it
-  const separatorIndex = lines.findIndex(line => line.trim() === '---')
-  if (separatorIndex > 0 && lines[separatorIndex - 1].trim() !== '') {
-    lines.splice(separatorIndex, 0, '')
-  }
-
-  return lines
+  return board.trim().split('\n')
 }
 
 /**

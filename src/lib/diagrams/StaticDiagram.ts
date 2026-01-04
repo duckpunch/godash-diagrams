@@ -25,7 +25,7 @@ export class StaticDiagram implements IDiagram {
     let configStartIndex = boardStartIndex
     for (let i = boardStartIndex; i < lines.length; i++) {
       const line = lines[i]
-      if (line.trim() === '' || line.indexOf(':') > 0) {
+      if (line.trim() === '' || line.trim() === '---' || line.indexOf(':') > 0) {
         configStartIndex = i
         break
       }

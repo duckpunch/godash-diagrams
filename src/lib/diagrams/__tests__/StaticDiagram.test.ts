@@ -371,6 +371,30 @@ describe('StaticDiagram', () => {
     })
   })
 
+  describe('YAML Parsing', () => {
+    it('parses config without blank line before ---', () => {
+      const element = createMockElement()
+      // Note: no blank line between board and ---
+      const lines = ['static', '', '. . .', '. . .', '. . .', '---', 'ignore-rules: true']
+
+      const diagram = new StaticDiagram(element, lines)
+      diagram.render()
+
+      expect(element.innerHTML).toContain('<svg')
+    })
+
+    it('parses config with blank line before ---', () => {
+      const element = createMockElement()
+      // Traditional format with blank line
+      const lines = ['static', '', '. . .', '. . .', '. . .', '', '---', 'ignore-rules: true']
+
+      const diagram = new StaticDiagram(element, lines)
+      diagram.render()
+
+      expect(element.innerHTML).toContain('<svg')
+    })
+  })
+
   describe('Edge Cases', () => {
     it('handles empty annotations', () => {
       const element = createMockElement()
