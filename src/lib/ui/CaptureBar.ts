@@ -83,10 +83,8 @@ export function renderCaptureBar(options: CaptureBarOptions): string {
 
   let html = `<div style="${barStyle}">`
 
-  if (rightContent) {
-    // Layout with right content: [captures on left] [right content]
-    html += `<div style="${groupStyle}">`
-  }
+  // Always wrap capture items in a group for consistent spacing
+  html += `<div style="${groupStyle}">`
 
   // White captures
   html += `<div style="${itemStyle}">`
@@ -100,8 +98,10 @@ export function renderCaptureBar(options: CaptureBarOptions): string {
   html += `<span style="${numberStyle}">${blackCaptured}</span>`
   html += `</div>`
 
+  html += `</div>` // Close group
+
+  // Add right content if provided
   if (rightContent) {
-    html += `</div>` // Close group
     html += rightContent
   }
 
