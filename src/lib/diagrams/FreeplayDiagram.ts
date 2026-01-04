@@ -1,0 +1,321 @@
+import type { Color } from 'godash'
+import { Board, Move, Coordinate, BLACK, WHITE, isLegalMove, addMove, followupKo } from 'godash'
+import { validateBoard, parseOptions } from '../validate'
+import { boardToSvg } from '../render'
+import { renderCaptureBar, renderMoveCounter } from '../ui/CaptureBar'
+import { renderButtonBar } from '../ui/ButtonBar'
+import { renderTurnIndicator } from '../ui/TurnIndicator'
+import { ICONS } from '../ui/icons'
+import type { IDiagram, ParsedBoard, AnnotationInfo, ColorMode } from './types'
+import { countCapturesFromDiff } from './types'
+
+type HistoryEntry =
+  | { type: 'move'; move: Move }
+  | { type: 'pass'; color: Color }
+
+export class FreeplayDiagram implements IDiagram {
+  private parsedBoard: ParsedBoard
+  private element: Element
+  private currentBoard: Board
+  private initialBoard: Board
+  private history: HistoryEntry[]
+  private currentMoveIndex: number // -1 means no moves yet
+  private isBlackTurn: boolean
+  private colorMode: ColorMode
+  private numbered: boolean
+  private whiteCaptured: number
+  private blackCaptured: number
+  private ignoreKo: boolean
+  private koPoint: Coordinate | null
+
+  constructor(element: Element, lines: string[]) {
+    this.element = element
+
+    // Parse board
+    const parsed = validateBoard(lines, { allowEmpty: true })
+    this.parsedBoard = parsed
+
+    // Parse options
+    const parsedOptions = parseOptions(lines, parsed.configStartIndex)
+
+    // Parse color option (default to "alternate")
+    const colorOption = parsedOptions.color
+    const colorValue = colorOption
+      ? (Array.isArray(colorOption) ? colorOption[0] : colorOption).toLowerCase()
+      : 'alternate'
+
+    if (colorValue !== 'black' && colorValue !== 'white' && colorValue !== 'alternate') {
+      throw new Error(`Invalid color value '${colorValue}'. Must be 'black', 'white', or 'alternate'`)
+    }
+    this.colorMode = colorValue as ColorMode
+
+    // Parse numbered option (default to false)
+    const numberedOption = parsedOptions.numbered
+    this.numbered = numberedOption === 'true' || numberedOption === '1'
+
+    // Parse ignore-ko option (default to false)
+    const ignoreKoOption = parsedOptions['ignore-ko']
+    this.ignoreKo = ignoreKoOption === 'true' || ignoreKoOption === '1'
+
+    this.initialBoard = this.parsedBoard.board
+    this.currentBoard = this.parsedBoard.board
+    this.history = []
+    this.currentMoveIndex = -1
+    // Set initial turn based on color mode
+    this.isBlackTurn = this.colorMode !== 'white'
+    this.whiteCaptured = 0
+    this.blackCaptured = 0
+    this.koPoint = null
+  }
+
+  private rebuildBoard(): void {
+    // Start with initial board
+    let board = this.initialBoard
+
+    // Reset capture counts
+    this.whiteCaptured = 0
+    this.blackCaptured = 0
+
+    // Track board before last move for ko calculation
+    let boardBeforeLastMove = this.initialBoard
+    let lastMove: Move | null = null
+
+    // Apply moves up to currentMoveIndex
+    for (let i = 0; i <= this.currentMoveIndex; i++) {
+      const entry = this.history[i]
+      if (entry.type === 'move') {
+        boardBeforeLastMove = board
+        lastMove = entry.move
+        board = addMove(board, entry.move)
+
+        // Count captures
+        const captures = countCapturesFromDiff(boardBeforeLastMove, board)
+        this.whiteCaptured += captures.whiteCaptured
+        this.blackCaptured += captures.blackCaptured
+      } else {
+        // Pass move clears ko point
+        lastMove = null
+      }
+    }
+
+    this.currentBoard = board
+
+    // Calculate ko point from last move
+    if (!this.ignoreKo && lastMove) {
+      this.koPoint = followupKo(boardBeforeLastMove, lastMove)
+    } else {
+      this.koPoint = null
+    }
+
+    // Update whose turn it is based on color mode and history
+    if (this.colorMode === 'black') {
+      this.isBlackTurn = true // Always black
+    } else if (this.colorMode === 'white') {
+      this.isBlackTurn = false // Always white
+    } else {
+      // Alternate mode - toggle based on history
+      if (this.currentMoveIndex === -1) {
+        this.isBlackTurn = true
+      } else {
+        const lastEntry = this.history[this.currentMoveIndex]
+        const lastColor = lastEntry.type === 'move' ? lastEntry.move.color : lastEntry.color
+        this.isBlackTurn = lastColor === WHITE
+      }
+    }
+  }
+
+  private undo(): void {
+    if (this.currentMoveIndex >= 0) {
+      this.currentMoveIndex--
+      this.rebuildBoard()
+      this.render()
+    }
+  }
+
+  private redo(): void {
+    if (this.currentMoveIndex < this.history.length - 1) {
+      this.currentMoveIndex++
+      this.rebuildBoard()
+      this.render()
+    }
+  }
+
+  private pass(): void {
+    // Truncate history if we're not at the end
+    this.history = this.history.slice(0, this.currentMoveIndex + 1)
+
+    // Add pass to history
+    const color = this.isBlackTurn ? BLACK : WHITE
+    this.history.push({ type: 'pass', color })
+    this.currentMoveIndex++
+
+    // Toggle turn (only in alternate mode, rebuildBoard will handle fixed colors)
+    if (this.colorMode === 'alternate') {
+      this.isBlackTurn = !this.isBlackTurn
+    }
+
+    this.render()
+  }
+
+  private reset(): void {
+    this.history = []
+    this.currentMoveIndex = -1
+    this.currentBoard = this.initialBoard
+    // Set initial turn based on color mode
+    if (this.colorMode === 'white') {
+      this.isBlackTurn = false
+    } else {
+      this.isBlackTurn = true // For both 'black' and 'alternate'
+    }
+    this.whiteCaptured = 0
+    this.blackCaptured = 0
+    this.koPoint = null
+    this.render()
+  }
+
+  render(): void {
+    const element = this.element
+
+    const { rowCount, columnCount } = this.parsedBoard
+
+    // Build annotations for move numbers if numbered is enabled
+    const annotations = new Map<string, AnnotationInfo>()
+    if (this.numbered) {
+      let moveNumber = 1
+      for (let i = 0; i <= this.currentMoveIndex; i++) {
+        const entry = this.history[i]
+        if (entry.type === 'move') {
+          const key = `${entry.move.coordinate.x},${entry.move.coordinate.y}`
+          annotations.set(key, {
+            label: String(moveNumber),
+            shape: 'text'
+          })
+        }
+        // Increment for both moves and passes
+        moveNumber++
+      }
+    }
+
+    // Determine last move coordinate (only if not numbered - numbers already show last move)
+    let lastMove: Coordinate | undefined
+    if (!this.numbered && this.currentMoveIndex >= 0) {
+      const lastEntry = this.history[this.currentMoveIndex]
+      if (lastEntry.type === 'move') {
+        lastMove = lastEntry.move.coordinate
+      }
+    }
+
+    // Generate SVG using current board state
+    const boardSvg = boardToSvg(this.currentBoard, rowCount, columnCount, annotations, lastMove)
+
+    // Create container with SVG and buttons
+    const undoButtonId = `undo-${Math.random().toString(36).substr(2, 9)}`
+    const redoButtonId = `redo-${Math.random().toString(36).substr(2, 9)}`
+    const passButtonId = `pass-${Math.random().toString(36).substr(2, 9)}`
+    const resetButtonId = `reset-${Math.random().toString(36).substr(2, 9)}`
+
+    let output = `<div class="freeplay-container">`
+    output += renderButtonBar({
+      leftContent: renderTurnIndicator(this.isBlackTurn),
+      buttons: [
+        { id: undoButtonId, icon: ICONS.undo, title: 'Undo', disabled: this.currentMoveIndex < 0 },
+        { id: redoButtonId, icon: ICONS.redo, title: 'Redo', disabled: this.currentMoveIndex >= this.history.length - 1 },
+        { id: passButtonId, icon: ICONS.pass, title: 'Pass' },
+        { id: resetButtonId, icon: ICONS.reset, title: 'Reset' },
+      ],
+      marginDirection: 'bottom',
+    })
+    output += boardSvg
+
+    // Capture count bar (below board) with move counter on right
+    const moveCount = this.currentMoveIndex + 1
+    output += renderCaptureBar({
+      whiteCaptured: this.whiteCaptured,
+      blackCaptured: this.blackCaptured,
+      rightContent: renderMoveCounter(moveCount),
+      marginDirection: 'top',
+    })
+
+    output += `</div>`
+
+    element.innerHTML = output
+
+    // Add click handler to SVG
+    const svg = element.querySelector('svg.godash-board') as SVGSVGElement | null
+    const undoButton = document.getElementById(undoButtonId)
+    const redoButton = document.getElementById(redoButtonId)
+    const passButton = document.getElementById(passButtonId)
+    const resetButton = document.getElementById(resetButtonId)
+
+    if (svg) {
+      svg.style.cursor = 'pointer'
+
+      svg.addEventListener('click', (event: Event) => {
+        const mouseEvent = event as MouseEvent
+
+        // Convert screen coordinates to SVG coordinates (accounting for viewBox)
+        const pt = svg.createSVGPoint()
+        pt.x = mouseEvent.clientX
+        pt.y = mouseEvent.clientY
+        const ctm = svg.getScreenCTM()
+        if (!ctm) return
+        const svgPt = pt.matrixTransform(ctm.inverse())
+
+        // Convert to board coordinates
+        const cellSize = 30
+        const margin = cellSize
+        const col = Math.round((svgPt.x - margin) / cellSize)
+        const row = Math.round((svgPt.y - margin) / cellSize)
+
+        // Validate coordinates are within board bounds
+        if (row >= 0 && row < rowCount && col >= 0 && col < columnCount) {
+          const coordinate = Coordinate(row, col)
+          const color = this.isBlackTurn ? BLACK : WHITE
+          const move = Move(coordinate, color)
+
+          // Check if move violates ko rule
+          if (!this.ignoreKo && this.koPoint && coordinate.equals(this.koPoint)) {
+            // Silently ignore ko violation
+            return
+          }
+
+          // Check if move is legal
+          if (isLegalMove(this.currentBoard, move)) {
+            // Truncate history if we're not at the end
+            this.history = this.history.slice(0, this.currentMoveIndex + 1)
+
+            // Add move to history
+            this.history.push({ type: 'move', move })
+            this.currentMoveIndex++
+
+            // Update board and turn
+            this.rebuildBoard()
+
+            // Re-render the diagram
+            this.render()
+          }
+          // Silently ignore illegal moves
+        }
+        // Silently ignore clicks outside bounds
+      })
+    }
+
+    // Add button event handlers
+    if (undoButton) {
+      undoButton.addEventListener('click', () => this.undo())
+    }
+
+    if (redoButton) {
+      redoButton.addEventListener('click', () => this.redo())
+    }
+
+    if (passButton) {
+      passButton.addEventListener('click', () => this.pass())
+    }
+
+    if (resetButton) {
+      resetButton.addEventListener('click', () => this.reset())
+    }
+  }
+}
+

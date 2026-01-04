@@ -508,3 +508,197 @@ if (this.result === ProblemResult.Incomplete) {
 
 The codebase is getting much cleaner and more maintainable with each extraction!
 
+
+---
+
+## Phase 4: Split Diagram Classes into Separate Files ✅ COMPLETE
+
+### Date
+2026-01-03
+
+### Summary
+Successfully split the monolithic model.ts file into separate files for each diagram class, creating a clean, organized structure with shared types and a simple barrel export pattern.
+
+### Changes Made
+
+#### New Files Created
+1. **src/lib/diagrams/types.ts** (92 lines)
+   - Shared type definitions and interfaces
+   - `ProblemResult` enum and type
+   - `SequenceNode` and `SequenceTree` for problem solving
+   - `ParsedBoard`, `IDiagram`, `AnnotationInfo`, `AnnotationShape`
+   - `ParsedMove` and `ColorMode` for replay and freeplay
+   - `countCapturesFromDiff()` helper function
+   - Well-documented with comments
+
+2. **src/lib/diagrams/StaticDiagram.ts** (166 lines)
+   - Complete StaticDiagram class implementation
+   - Handles static board positions with annotations
+   - Support for area colors and custom marks
+   - All necessary imports and no external dependencies on other diagrams
+
+3. **src/lib/diagrams/ProblemDiagram.ts** (596 lines)
+   - Complete ProblemDiagram class implementation
+   - Interactive problem-solving with sequence trees
+   - Success/failure/incomplete states
+   - Ko rule handling and capture counting
+   - Reset functionality
+
+4. **src/lib/diagrams/FreeplayDiagram.ts** (321 lines)
+   - Complete FreeplayDiagram class implementation
+   - Interactive freeplay mode with move history
+   - Undo/redo/pass/reset functionality
+   - Configurable color mode (black/white/alternate)
+   - Ko rule handling
+
+5. **src/lib/diagrams/ReplayDiagram.ts** (281 lines)
+   - Complete ReplayDiagram class implementation
+   - Move-by-move replay with navigation (first/prev/next/last)
+   - Automatic sequence building from board marks
+   - Support for multiple numbered sequences
+   - Integrates with other diagram types for transitions
+
+#### Files Modified
+1. **src/lib/model.ts**
+   - **Before**: 1,386 lines (monolithic file with all diagrams)
+   - **After**: 38 lines (clean barrel export)
+   - **Reduction**: 1,348 lines (-97.3%!)
+   - Now just imports and re-exports from diagram files
+   - Provides `DIAGRAM_TYPES` registry for dynamic instantiation
+   - Clear, documented structure
+
+### Metrics
+
+**Before Phase 4:**
+- model.ts: 1,386 lines (everything in one file)
+- File organization: Monolithic
+- Navigation difficulty: Very high (hard to find specific diagram code)
+- Merge conflicts: High probability
+- Code ownership: Unclear
+
+**After Phase 4:**
+- model.ts: 38 lines (barrel export only)
+- src/lib/diagrams/types.ts: 92 lines
+- src/lib/diagrams/StaticDiagram.ts: 166 lines
+- src/lib/diagrams/ProblemDiagram.ts: 596 lines
+- src/lib/diagrams/FreeplayDiagram.ts: 321 lines
+- src/lib/diagrams/ReplayDiagram.ts: 281 lines
+- **Total diagram code**: 1,456 lines (distributed across 5 files)
+- **Net change**: +70 lines (due to import statements in each file)
+- File organization: Clean separation of concerns
+- Navigation: Each diagram in its own file, easy to find
+- Merge conflicts: Much lower probability
+- Code ownership: Clear per-diagram ownership possible
+
+**Cumulative metrics (Phases 1 + 2 + 3 + 4):**
+- Original model.ts: 1,475 → 38 lines **(-1,437 lines, -97.4%!)**
+- New organized code:
+  - 8 UI component files (952 lines)
+  - 5 diagram files (1,456 lines)
+  - Total: 13 new files, 2,408 lines
+- Tests: 52/52 passing
+- Build: ✅ All builds passing
+
+**File size comparison:**
+```
+Original structure:
+└── model.ts (1,475 lines - everything)
+
+New structure:
+├── model.ts (38 lines - barrel export)
+├── diagrams/
+│   ├── types.ts (92 lines - shared types)
+│   ├── StaticDiagram.ts (166 lines)
+│   ├── ProblemDiagram.ts (596 lines)
+│   ├── FreeplayDiagram.ts (321 lines)
+│   └── ReplayDiagram.ts (281 lines)
+└── ui/
+    ├── styles.ts (45 lines)
+    ├── icons.ts (19 lines)
+    ├── CaptureBar.ts (120 lines)
+    ├── ButtonBar.ts (179 lines)
+    ├── TurnIndicator.ts (47 lines)
+    └── __tests__/ (3 test files, 542 lines)
+```
+
+### Benefits Achieved
+
+1. **Organization**: Clear file structure with logical separation
+2. **Navigation**: Easy to find specific diagram implementations
+3. **Maintainability**: Changes to one diagram don't affect others
+4. **Testability**: Each diagram can be tested independently
+5. **Code Review**: Smaller, focused files easier to review
+6. **Merge Conflicts**: Reduced conflicts from multiple developers
+7. **Imports**: Clean dependency graph (no circular dependencies)
+8. **Documentation**: Each file can have focused documentation
+9. **Build Performance**: Potential for better tree-shaking and code splitting
+
+### Code Quality
+
+**Before: Monolithic model.ts**
+- 1,386 lines in a single file
+- All diagrams, types, and helpers mixed together
+- Difficult to navigate and understand
+- High cognitive load when making changes
+
+**After: Organized Structure**
+```typescript
+// model.ts - Clean barrel export (38 lines)
+import { StaticDiagram } from './diagrams/StaticDiagram'
+import { ProblemDiagram } from './diagrams/ProblemDiagram'
+import { FreeplayDiagram } from './diagrams/FreeplayDiagram'
+import { ReplayDiagram } from './diagrams/ReplayDiagram'
+
+export type { IDiagram, ParsedBoard, AnnotationInfo, /* ... */ } from './diagrams/types'
+export { ProblemResult, countCapturesFromDiff } from './diagrams/types'
+
+export { StaticDiagram, ProblemDiagram, FreeplayDiagram, ReplayDiagram }
+
+export const DIAGRAM_TYPES = {
+  static: StaticDiagram,
+  freeplay: FreeplayDiagram,
+  problem: ProblemDiagram,
+  replay: ReplayDiagram,
+} as const
+
+export type DiagramType = keyof typeof DIAGRAM_TYPES
+```
+
+**Each diagram file:**
+- Self-contained implementation
+- Clear imports at the top
+- Single responsibility (one diagram type)
+- Easy to understand and modify
+
+### Lessons Learned
+
+1. **File Size Matters**: 1,400-line files are hard to work with
+2. **Separation of Concerns**: Each diagram deserves its own file
+3. **Barrel Exports**: Clean way to maintain public API while reorganizing internally
+4. **Import Management**: TypeScript's type vs value imports need careful attention
+5. **Shared Types**: Common types in dedicated file reduces duplication
+6. **Build Verification**: Important to test after major restructuring
+7. **Incremental Approach**: Could have done this earlier, but previous refactorings made it easier
+
+### Success Criteria Met
+
+- [x] All diagram classes extracted to separate files
+- [x] Shared types properly organized in types.ts
+- [x] model.ts serves as clean barrel export
+- [x] No circular dependencies
+- [x] All builds passing
+- [x] All tests passing (52/52)
+- [x] Public API unchanged (backward compatible)
+- [x] Type safety maintained throughout
+- [x] Clear file organization and navigation
+
+### Impact
+
+This is the **largest single refactoring** in the project:
+- **97.4% reduction** in model.ts size
+- Went from **1 monolithic file** to **5 focused diagram files**
+- **Much better developer experience** for future work
+- Foundation for continued improvements
+
+The codebase is now **well-organized, maintainable, and ready for future features**!
+
