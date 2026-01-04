@@ -1,6 +1,7 @@
 # Godash Diagrams
 
 [![npm](https://img.shields.io/npm/v/godash-diagrams)](https://www.npmjs.com/package/godash-diagrams)
+[![CI](https://github.com/duckpunch/godash-diagrams/actions/workflows/ci.yml/badge.svg)](https://github.com/duckpunch/godash-diagrams/actions/workflows/ci.yml)
 
 A diagramming library for [Go](https://en.wikipedia.org/wiki/Go_(game)), inspired by [Mermaid](https://mermaid.js.org/), and built on [Godash](https://duckpunch.github.io/godash/).
 
