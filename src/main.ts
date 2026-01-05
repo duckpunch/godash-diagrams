@@ -27,8 +27,7 @@ const EXAMPLES = {
 . . . . . . . . O . . O . X . X . X .
 
 ---
-triangle: T
-`,
+triangle: T`,
 
   colorful: `static
 
@@ -95,6 +94,19 @@ sequences:
 }
 
 const textarea = document.querySelector<HTMLTextAreaElement>('#source-input')!
+const lineNumbers = document.querySelector<HTMLDivElement>('#line-numbers')!
+
+// Function to update line numbers
+function updateLineNumbers() {
+  const lines = textarea.value.split('\n')
+  const lineCount = lines.length
+  lineNumbers.textContent = Array.from({ length: lineCount }, (_, i) => i + 1).join('\n')
+}
+
+// Sync scroll position between textarea and line numbers
+textarea.addEventListener('scroll', () => {
+  lineNumbers.scrollTop = textarea.scrollTop
+})
 
 // Create example buttons
 const buttonContainer = document.createElement('div')
@@ -115,6 +127,7 @@ Object.keys(EXAMPLES).forEach(exampleType => {
 
   button.addEventListener('click', () => {
     textarea.value = EXAMPLES[exampleType as keyof typeof EXAMPLES]
+    updateLineNumbers()
     init('#app', {
       diagramSource: textarea.value
     })
@@ -123,19 +136,24 @@ Object.keys(EXAMPLES).forEach(exampleType => {
   buttonContainer.appendChild(button)
 })
 
-// Insert buttons after the textarea
-textarea.parentElement!.insertBefore(buttonContainer, textarea.nextSibling)
+// Insert buttons after the editor container
+const editorContainer = document.querySelector('.editor-container')!
+editorContainer.parentElement!.insertBefore(buttonContainer, editorContainer.nextSibling)
 
 // Set initial value to problem example
 textarea.value = EXAMPLES.static
+
+// Initialize line numbers
+updateLineNumbers()
 
 // Initialize diagram with initial source
 init('#app', {
   diagramSource: textarea.value
 })
 
-// Update diagram on input
+// Update diagram and line numbers on input
 textarea.addEventListener('input', () => {
+  updateLineNumbers()
   init('#app', {
     diagramSource: textarea.value
   })
