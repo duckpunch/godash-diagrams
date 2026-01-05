@@ -6,6 +6,32 @@ import { init } from './lib/index'
 const EXAMPLES = {
   static: `static
 
+. . . . . . . . . X O O . . . . . . .
+. . . X . . . . . X O . O . O O X . .
+. . O O . X . . O X X O O . O X . . .
+. . . + . . . . . + . X X X . + X . .
+. . . . . X . . . . X . . . . X X . .
+. . O . . . . . . . . . . . . X O O .
+. . . . . . . . . . . . . O O O X X X
+. . . . . . . . . . . . . . X O O O X
+. . . . . . . . . T . . X O O X X X .
+. . . + . . . . . + . . O O X + X O .
+. . O . . . . . . . . . . . O X X O .
+. . . . . . . . . . . . . . O X O X .
+. . . . . . . . . . . . O . O X O O .
+. . O . . . . . . X . X O . O X . . .
+. . . . . . X . O . . X O . O X O . .
+. . X + X . . X . + . X O O X O O . .
+. . . . . X O X O . O O X X X X O O .
+. . . . . . X O . O O . O X X . X O .
+. . . . . . . . O . . O . X . X . X .
+
+---
+triangle: T
+`,
+
+  colorful: `static
+
 .  .  .  .  .  .  .  .  .
 .  .  .  .  .  .  .  .  .
 .  .  +  .  .  .  +  .  .
@@ -101,7 +127,7 @@ Object.keys(EXAMPLES).forEach(exampleType => {
 textarea.parentElement!.insertBefore(buttonContainer, textarea.nextSibling)
 
 // Set initial value to problem example
-textarea.value = EXAMPLES.problem
+textarea.value = EXAMPLES.static
 
 // Initialize diagram with initial source
 init('#app', {
