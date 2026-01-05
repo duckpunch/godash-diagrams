@@ -544,6 +544,32 @@ describe('ReplayDiagram', () => {
     })
   })
 
+  describe('Moves Configuration', () => {
+    it('accepts moves config to reference earlier move coordinates', () => {
+      const element = createMockElement()
+      const lines = createBoardLines(`
+        replay
+
+        2 1 6
+        3 4 .
+        . 5 7
+
+        ---
+        moves:
+          8: 2
+      `)
+
+      const diagram = new ReplayDiagram(element, lines)
+      diagram.render()
+
+      // Should have 8 moves total
+      expect(element.innerHTML).toContain('0 / 8')
+
+      clickButtonByPrefix(element, 'last')
+      expect(element.innerHTML).toContain('8 / 8')
+    })
+  })
+
   describe('Edge Cases', () => {
     it('handles single move sequence', () => {
       const element = createMockElement()

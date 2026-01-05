@@ -69,8 +69,30 @@ export class ReplayDiagram implements IDiagram {
       }
     }
 
+    // Parse moves option (maps move numbers to reference move numbers)
+    const movesOption = config.moves
+    const movesMap = new Map<number, number>()
+    if (movesOption && typeof movesOption === 'object' && !Array.isArray(movesOption)) {
+      for (const [key, value] of Object.entries(movesOption)) {
+        const moveNum = parseInt(key, 10)
+        const refMoveNum = typeof value === 'number' ? value : parseInt(String(value), 10)
+
+        if (isNaN(moveNum) || moveNum <= 0) {
+          throw new Error(`Invalid move number '${key}' in moves config. Must be a positive integer`)
+        }
+        if (isNaN(refMoveNum) || refMoveNum <= 0) {
+          throw new Error(`Invalid reference move number '${value}' for move ${moveNum}. Must be a positive integer`)
+        }
+        if (moveNum === refMoveNum) {
+          throw new Error(`Move ${moveNum} cannot reference itself`)
+        }
+
+        movesMap.set(moveNum, refMoveNum)
+      }
+    }
+
     // Build move sequence from otherMarks
-    this.moveSequence = this.buildMoveSequence(parsed.otherMarks, startColor)
+    this.moveSequence = this.buildMoveSequence(parsed.otherMarks, startColor, movesMap)
 
     // Validate initial-move is within bounds
     if (initialMove > this.moveSequence.length) {
@@ -85,8 +107,8 @@ export class ReplayDiagram implements IDiagram {
     this.rebuildBoard()
   }
 
-  private buildMoveSequence(otherMarks: Record<string, Coordinate[]>, startColor: Color): ParsedMove[] {
-    // Extract all numbered marks
+  private buildMoveSequence(otherMarks: Record<string, Coordinate[]>, startColor: Color, movesMap: Map<number, number>): ParsedMove[] {
+    // Extract all numbered marks from the board
     const numberedMarks: Array<{ number: number, coordinate: Coordinate }> = []
 
     for (const [mark, coordinates] of Object.entries(otherMarks)) {
@@ -104,28 +126,91 @@ export class ReplayDiagram implements IDiagram {
       }
     }
 
-    // Sort by move number
-    numberedMarks.sort((a, b) => a.number - b.number)
+    // Build coordinate lookup from board marks
+    const boardCoordinates = new Map<number, Coordinate>()
+    for (const { number, coordinate } of numberedMarks) {
+      boardCoordinates.set(number, coordinate)
+    }
 
-    // Validate consecutive sequence (1, 2, 3, ...)
-    if (numberedMarks.length === 0) {
+    // Determine all move numbers (from board + moves config)
+    const allMoveNumbers = new Set<number>()
+    for (const { number } of numberedMarks) {
+      allMoveNumbers.add(number)
+    }
+    for (const moveNum of movesMap.keys()) {
+      allMoveNumbers.add(moveNum)
+    }
+
+    // Validate we have at least one move
+    if (allMoveNumbers.size === 0) {
       throw new Error('Replay diagram must have at least one numbered move')
     }
 
-    for (let i = 0; i < numberedMarks.length; i++) {
+    // Sort move numbers
+    const sortedMoveNumbers = Array.from(allMoveNumbers).sort((a, b) => a - b)
+
+    // Validate consecutive sequence (1, 2, 3, ...)
+    for (let i = 0; i < sortedMoveNumbers.length; i++) {
       const expected = i + 1
-      const actual = numberedMarks[i].number
+      const actual = sortedMoveNumbers[i]
       if (actual !== expected) {
         throw new Error(`Move numbers must be consecutive starting from 1 (expected ${expected}, found ${actual})`)
       }
     }
 
+    // Build coordinate lookup with moves references resolved
+    const resolvedCoordinates = new Map<number, Coordinate>()
+
+    // Helper to resolve a move's coordinate (handles chains of references)
+    const resolveCoordinate = (moveNum: number, visited: Set<number> = new Set()): Coordinate => {
+      // Check for circular references
+      if (visited.has(moveNum)) {
+        const chain = Array.from(visited).concat(moveNum).join(' -> ')
+        throw new Error(`Circular reference detected in moves config: ${chain}`)
+      }
+
+      // Check if already resolved
+      if (resolvedCoordinates.has(moveNum)) {
+        return resolvedCoordinates.get(moveNum)!
+      }
+
+      // Check if on board
+      if (boardCoordinates.has(moveNum)) {
+        const coord = boardCoordinates.get(moveNum)!
+        resolvedCoordinates.set(moveNum, coord)
+        return coord
+      }
+
+      // Check if in moves config
+      if (movesMap.has(moveNum)) {
+        const refMoveNum = movesMap.get(moveNum)!
+
+        // Reference must point to an earlier move
+        if (refMoveNum >= moveNum) {
+          throw new Error(`Move ${moveNum} references move ${refMoveNum}, but references must point to earlier moves`)
+        }
+
+        visited.add(moveNum)
+        const coord = resolveCoordinate(refMoveNum, visited)
+        resolvedCoordinates.set(moveNum, coord)
+        return coord
+      }
+
+      throw new Error(`Move ${moveNum} has no coordinate (not on board and not in moves config)`)
+    }
+
+    // Resolve all coordinates
+    for (const moveNum of sortedMoveNumbers) {
+      resolveCoordinate(moveNum)
+    }
+
     // Build ParsedMove array with colors
     const moves: ParsedMove[] = []
-    for (const { number, coordinate } of numberedMarks) {
+    for (const moveNum of sortedMoveNumbers) {
+      const coordinate = resolvedCoordinates.get(moveNum)!
       // Odd moves are startColor, even moves are opposite
-      const color = (number % 2 === 1) ? startColor : (startColor === BLACK ? WHITE : BLACK)
-      moves.push({ moveNumber: number, coordinate, color })
+      const color = (moveNum % 2 === 1) ? startColor : (startColor === BLACK ? WHITE : BLACK)
+      moves.push({ moveNumber: moveNum, coordinate, color })
     }
 
     return moves
