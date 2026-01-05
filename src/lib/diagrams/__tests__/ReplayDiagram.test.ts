@@ -386,6 +386,89 @@ describe('ReplayDiagram', () => {
 
       expect(() => new ReplayDiagram(element, lines)).toThrow()
     })
+
+    it('respects to-play option (black)', () => {
+      const element = createMockElement()
+      const lines = createBoardLines(`
+        replay
+
+        1 . .
+        . . .
+        . . .
+
+        ---
+        to-play: black
+      `)
+
+      const diagram = new ReplayDiagram(element, lines)
+      diagram.render()
+
+      clickButtonByPrefix(element, 'next')
+
+      // First move should be black
+      expect(element.innerHTML).toContain('fill="#000"')
+    })
+
+    it('respects to-play option (white)', () => {
+      const element = createMockElement()
+      const lines = createBoardLines(`
+        replay
+
+        1 . .
+        . . .
+        . . .
+
+        ---
+        to-play: white
+      `)
+
+      const diagram = new ReplayDiagram(element, lines)
+      diagram.render()
+
+      clickButtonByPrefix(element, 'next')
+
+      // First move should be white
+      expect(element.innerHTML).toContain('fill="#fff"')
+    })
+
+    it('to-play takes precedence over start-color', () => {
+      const element = createMockElement()
+      const lines = createBoardLines(`
+        replay
+
+        1 . .
+        . . .
+        . . .
+
+        ---
+        start-color: black
+        to-play: white
+      `)
+
+      const diagram = new ReplayDiagram(element, lines)
+      diagram.render()
+
+      clickButtonByPrefix(element, 'next')
+
+      // to-play: white should override start-color: black
+      expect(element.innerHTML).toContain('fill="#fff"')
+    })
+
+    it('throws error on invalid to-play option', () => {
+      const element = createMockElement()
+      const lines = createBoardLines(`
+        replay
+
+        1 . .
+        . . .
+        . . .
+
+        ---
+        to-play: invalid
+      `)
+
+      expect(() => new ReplayDiagram(element, lines)).toThrow()
+    })
   })
 
   describe('State Management', () => {

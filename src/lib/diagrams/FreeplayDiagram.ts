@@ -23,6 +23,7 @@ export class FreeplayDiagram implements IDiagram {
   private currentMoveIndex: number // -1 means no moves yet
   private isBlackTurn: boolean
   private colorMode: ColorMode
+  private toPlay: Color | null // Override for initial turn (null = use colorMode default)
   private numbered: boolean
   private whiteCaptured: number
   private blackCaptured: number
@@ -59,6 +60,18 @@ export class FreeplayDiagram implements IDiagram {
     // Parse ignore-ko option (default to false)
     const ignoreKoOption = config['ignore-ko']
     this.ignoreKo = ignoreKoOption === 'true' || ignoreKoOption === true
+
+    // Parse to-play option (sets initial turn color)
+    const toPlayOption = config['to-play']
+    if (toPlayOption) {
+      const toPlayValue = (Array.isArray(toPlayOption) ? toPlayOption[0] : (typeof toPlayOption === 'string' ? toPlayOption : '')).toLowerCase()
+      if (toPlayValue !== 'black' && toPlayValue !== 'white') {
+        throw new Error(`Invalid to-play value '${toPlayValue}'. Must be 'black' or 'white'`)
+      }
+      this.toPlay = toPlayValue === 'black' ? BLACK : WHITE
+    } else {
+      this.toPlay = null
+    }
 
     // Parse black and white marks into arrays
     const blackOption = config.black
@@ -126,8 +139,12 @@ export class FreeplayDiagram implements IDiagram {
     this.currentBoard = board
     this.history = []
     this.currentMoveIndex = -1
-    // Set initial turn based on color mode
-    this.isBlackTurn = this.colorMode !== 'white'
+    // Set initial turn based on to-play or color mode
+    if (this.toPlay !== null) {
+      this.isBlackTurn = this.toPlay === BLACK
+    } else {
+      this.isBlackTurn = this.colorMode !== 'white'
+    }
     this.whiteCaptured = 0
     this.blackCaptured = 0
     this.koPoint = null
@@ -226,8 +243,10 @@ export class FreeplayDiagram implements IDiagram {
     this.history = []
     this.currentMoveIndex = -1
     this.currentBoard = this.initialBoard
-    // Set initial turn based on color mode
-    if (this.colorMode === 'white') {
+    // Set initial turn based on to-play or color mode
+    if (this.toPlay !== null) {
+      this.isBlackTurn = this.toPlay === BLACK
+    } else if (this.colorMode === 'white') {
       this.isBlackTurn = false
     } else {
       this.isBlackTurn = true // For both 'black' and 'alternate'

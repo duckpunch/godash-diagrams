@@ -38,16 +38,21 @@ export class ReplayDiagram implements IDiagram {
     const yamlContent = extractYamlSection(lines, parsed.configStartIndex)
     const config = yamlContent ? parseYaml(yamlContent) : {}
 
-    // Parse start-color option (default to black)
+    // Parse to-play option (takes precedence over start-color)
+    const toPlayOption = config['to-play']
     const startColorOption = config['start-color']
-    const startColorValue = startColorOption
-      ? (Array.isArray(startColorOption) ? startColorOption[0] : (typeof startColorOption === 'string' ? startColorOption : 'black')).toLowerCase()
+
+    // Use to-play if specified, otherwise fall back to start-color
+    const colorOption = toPlayOption || startColorOption
+    const colorValue = colorOption
+      ? (Array.isArray(colorOption) ? colorOption[0] : (typeof colorOption === 'string' ? colorOption : 'black')).toLowerCase()
       : 'black'
 
-    if (startColorValue !== 'black' && startColorValue !== 'white') {
-      throw new Error(`Invalid start-color value '${startColorValue}'. Must be 'black' or 'white'`)
+    if (colorValue !== 'black' && colorValue !== 'white') {
+      const optionName = toPlayOption ? 'to-play' : 'start-color'
+      throw new Error(`Invalid ${optionName} value '${colorValue}'. Must be 'black' or 'white'`)
     }
-    const startColor = startColorValue === 'white' ? WHITE : BLACK
+    const startColor = colorValue === 'white' ? WHITE : BLACK
 
     // Parse show-numbers option (default to false)
     const showNumbersOption = config['show-numbers']

@@ -244,6 +244,81 @@ describe('FreeplayDiagram', () => {
 
       expect(() => new FreeplayDiagram(element, lines)).not.toThrow()
     })
+
+    it('accepts to-play: black option', () => {
+      const element = createMockElement()
+      const lines = createBoardLines(`
+        freeplay
+
+        . . .
+        . . .
+        . . .
+
+        ---
+        to-play: black
+      `)
+
+      const diagram = new FreeplayDiagram(element, lines)
+      diagram.render()
+
+      expect(element.innerHTML).toContain('Black to play')
+    })
+
+    it('accepts to-play: white option', () => {
+      const element = createMockElement()
+      const lines = createBoardLines(`
+        freeplay
+
+        . . .
+        . . .
+        . . .
+
+        ---
+        to-play: white
+      `)
+
+      const diagram = new FreeplayDiagram(element, lines)
+      diagram.render()
+
+      expect(element.innerHTML).toContain('White to play')
+    })
+
+    it('to-play overrides color mode default in alternate mode', () => {
+      const element = createMockElement()
+      const lines = createBoardLines(`
+        freeplay
+
+        . . .
+        . . .
+        . . .
+
+        ---
+        color: alternate
+        to-play: white
+      `)
+
+      const diagram = new FreeplayDiagram(element, lines)
+      diagram.render()
+
+      // Should start with white even though alternate normally starts with black
+      expect(element.innerHTML).toContain('White to play')
+    })
+
+    it('throws error on invalid to-play option', () => {
+      const element = createMockElement()
+      const lines = createBoardLines(`
+        freeplay
+
+        . . .
+        . . .
+        . . .
+
+        ---
+        to-play: invalid
+      `)
+
+      expect(() => new FreeplayDiagram(element, lines)).toThrow()
+    })
   })
 
   describe('Initial State', () => {
