@@ -11,7 +11,7 @@ describe('TurnIndicator', () => {
       expect(html).toContain('height: 28px')
       expect(html).toContain('border-radius: 50%')
       expect(html).toContain('background: #000000')
-      expect(html).toContain('border: none')
+      expect(html).toContain('border: 2px solid var(--godash-black-stone-border, #424242)')
       expect(html).toContain('title="Black to play"')
     })
 
@@ -136,7 +136,7 @@ describe('TurnIndicator', () => {
       const html = renderResultIcon('failure')
 
       expect(html).toContain(ICONS.x)
-      expect(html).toContain('stroke="#c62828"') // Red X mark
+      expect(html).toContain('stroke: var(--godash-icon-failure, #c62828)') // Red X mark with CSS variable
     })
   })
 })

@@ -581,9 +581,9 @@ describe('ProblemDiagram', () => {
       const diagram = new ProblemDiagram(element, lines)
       diagram.render()
 
-      // Should have default neutral colors
-      expect(element.innerHTML).toContain('background: #f8f8f8')
-      expect(element.innerHTML).toContain('border: 1px solid #9e9e9e')
+      // Should have default neutral colors (using CSS variables)
+      expect(element.innerHTML).toContain('background: var(--godash-bar-bg, #f8f8f8)')
+      expect(element.innerHTML).toContain('border: 1px solid var(--godash-bar-border, #9e9e9e)')
     })
 
     it('renders green styling for success state', () => {
@@ -608,9 +608,9 @@ describe('ProblemDiagram', () => {
       const coord = Coordinate(0, 0)
       handleMove(coord)
 
-      // Should have success (green) colors
-      expect(element.innerHTML).toContain('background: #e8f5e9')
-      expect(element.innerHTML).toContain('border: 1px solid #2e7d32')
+      // Should have success (green) colors (using CSS variables)
+      expect(element.innerHTML).toContain('background: var(--godash-success-light, #e8f5e9)')
+      expect(element.innerHTML).toContain('border: 1px solid var(--godash-success-main, #2e7d32)')
     })
 
     it('renders red styling for failure state', () => {
@@ -634,9 +634,9 @@ describe('ProblemDiagram', () => {
       const coord = { x: 0, y: 1, equals: (other: any) => other.x === 0 && other.y === 1 }
       handleMove(coord)
 
-      // Should have failure (red) colors
-      expect(element.innerHTML).toContain('background: #ffebee')
-      expect(element.innerHTML).toContain('border: 1px solid #c62828')
+      // Should have failure (red) colors (using CSS variables)
+      expect(element.innerHTML).toContain('background: var(--godash-failure-light, #ffebee)')
+      expect(element.innerHTML).toContain('border: 1px solid var(--godash-failure-main, #c62828)')
     })
 
     it('applies styling to both ButtonBar and CaptureBar on success', () => {
@@ -661,9 +661,9 @@ describe('ProblemDiagram', () => {
       handleMove(coord)
 
       const html = element.innerHTML
-      // Count occurrences of success colors (should appear in both bars)
-      const greenBgCount = (html.match(/background: #e8f5e9/g) || []).length
-      const greenBorderCount = (html.match(/border: 1px solid #2e7d32/g) || []).length
+      // Count occurrences of success colors (should appear in both bars, using CSS variables)
+      const greenBgCount = (html.match(/background: var\(--godash-success-light, #e8f5e9\)/g) || []).length
+      const greenBorderCount = (html.match(/border: 1px solid var\(--godash-success-main, #2e7d32\)/g) || []).length
 
       expect(greenBgCount).toBeGreaterThanOrEqual(2) // Both ButtonBar and CaptureBar
       expect(greenBorderCount).toBeGreaterThanOrEqual(2)
@@ -691,9 +691,9 @@ describe('ProblemDiagram', () => {
       handleMove(coord)
 
       const html = element.innerHTML
-      // Count occurrences of failure colors (should appear in both bars)
-      const redBgCount = (html.match(/background: #ffebee/g) || []).length
-      const redBorderCount = (html.match(/border: 1px solid #c62828/g) || []).length
+      // Count occurrences of failure colors (should appear in both bars, using CSS variables)
+      const redBgCount = (html.match(/background: var\(--godash-failure-light, #ffebee\)/g) || []).length
+      const redBorderCount = (html.match(/border: 1px solid var\(--godash-failure-main, #c62828\)/g) || []).length
 
       expect(redBgCount).toBeGreaterThanOrEqual(2) // Both ButtonBar and CaptureBar
       expect(redBorderCount).toBeGreaterThanOrEqual(2)
