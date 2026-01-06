@@ -61,6 +61,8 @@ function setupThemeObserver(): void {
 
 interface DiagramOptions {
   diagramSource?: string
+  /** Whether to throw an error when no elements are found (default: true) */
+  throwOnNotFound?: boolean
 }
 
 function renderDiagram(element: Element, source: string): void {
@@ -118,8 +120,15 @@ export function init(selector?: string, options?: DiagramOptions): void {
   const query = selector ?? DEFAULT_DIAGRAM_CLASS
   const elements = document.querySelectorAll(query)
 
+  // By default, throw on not found (for explicit init calls)
+  // But allow disabling for auto-init scenarios
+  const throwOnNotFound = options?.throwOnNotFound ?? true
+
   if (elements.length === 0) {
-    throw new Error(`No elements found for selector: ${query}`)
+    if (throwOnNotFound) {
+      throw new Error(`No elements found for selector: ${query}`)
+    }
+    return
   }
 
   elements.forEach((element) => {

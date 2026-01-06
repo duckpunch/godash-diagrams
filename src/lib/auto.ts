@@ -6,11 +6,12 @@
 import { init } from './index'
 
 // Auto-initialize when DOM is ready
+// Don't throw errors if no diagrams found (it's ok for pages without diagrams)
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
-    init()
+    init(undefined, { throwOnNotFound: false })
   })
 } else {
   // DOM is already ready
-  init()
+  init(undefined, { throwOnNotFound: false })
 }

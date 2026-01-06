@@ -10,6 +10,9 @@
   --text-secondary: #999999;
   --border-color: #dddddd;
   --shadow-color: rgba(0, 0, 0, 0.1);
+  --link-color: #0066cc;
+  --link-visited: #551a8b;
+  --link-hover: #0052a3;
 }
 
 :root.dark-mode {
@@ -20,6 +23,9 @@
   --text-secondary: #888888;
   --border-color: #404040;
   --shadow-color: rgba(0, 0, 0, 0.3);
+  --link-color: #6bb6ff;
+  --link-visited: #b794f6;
+  --link-hover: #8fccff;
 }
 
 body {
@@ -30,6 +36,19 @@ body {
   background: var(--bg-primary);
   color: var(--text-primary);
   transition: background-color 0.3s, color 0.3s;
+}
+
+a {
+  color: var(--link-color);
+  transition: color 0.3s;
+}
+
+a:visited {
+  color: var(--link-visited);
+}
+
+a:hover {
+  color: var(--link-hover);
 }
 
 h1 {
