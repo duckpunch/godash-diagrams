@@ -96,8 +96,8 @@ describe('CaptureBar', () => {
         blackCaptured: 0,
       })
 
-      expect(html).toContain('background: #f8f8f8')
-      expect(html).toContain('border: 1px solid #9e9e9e')
+      expect(html).toContain('background: var(--godash-bar-bg, #f8f8f8)')
+      expect(html).toContain('border: 1px solid var(--godash-bar-border, #9e9e9e)')
       expect(html).toContain('border-radius:') // Has conditional border radius
       expect(html).toContain('max-width: 500px')
     })
@@ -178,7 +178,7 @@ describe('CaptureBar', () => {
     it('includes secondary text color', () => {
       const html = renderMoveCounter(1, 2)
 
-      expect(html).toContain('color: #616161')
+      expect(html).toContain('color: var(--godash-text-secondary, #616161)')
     })
   })
 

@@ -2,13 +2,34 @@
   box-sizing: border-box;
 }
 
+:root {
+  --bg-primary: #f5f5f5;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #f8f8f8;
+  --text-primary: #333333;
+  --text-secondary: #999999;
+  --border-color: #dddddd;
+  --shadow-color: rgba(0, 0, 0, 0.1);
+}
+
+:root.dark-mode {
+  --bg-primary: #1a1a1a;
+  --bg-secondary: #2d2d2d;
+  --bg-tertiary: #252525;
+  --text-primary: #e0e0e0;
+  --text-secondary: #888888;
+  --border-color: #404040;
+  --shadow-color: rgba(0, 0, 0, 0.3);
+}
+
 body {
   margin: 0;
   font-family: system-ui, -apple-system, sans-serif;
   line-height: 1.5;
   padding: 2rem;
-  background: #f5f5f5;
-  color: #333;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  transition: background-color 0.3s, color 0.3s;
 }
 
 h1 {
@@ -37,24 +58,26 @@ h1 {
   max-width: 800px;
   margin: 0 auto 1rem auto;
   display: flex;
-  border: 1px solid #ddd;
+  border: 1px solid var(--border-color);
   border-radius: 4px;
-  background: white;
+  background: var(--bg-secondary);
   overflow: hidden;
+  transition: background-color 0.3s, border-color 0.3s;
 }
 
 .line-numbers {
   padding: 1rem 0.5rem 1rem 1rem;
-  background: #f8f8f8;
-  border-right: 1px solid #ddd;
+  background: var(--bg-tertiary);
+  border-right: 1px solid var(--border-color);
   font-family: 'Courier New', Courier, monospace;
   font-size: 14px;
   line-height: 1.5;
   text-align: right;
   user-select: none;
-  color: #999;
+  color: var(--text-secondary);
   overflow: hidden;
   white-space: pre;
+  transition: background-color 0.3s, border-color 0.3s, color 0.3s;
 }
 
 #source-input {
@@ -67,13 +90,35 @@ h1 {
   resize: vertical;
   outline: none;
   overflow-y: auto;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  transition: background-color 0.3s, color 0.3s;
 }
 
 #app {
-  background: white;
+  background: var(--bg-secondary);
   padding: 2rem;
   border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px var(--shadow-color);
   max-width: 800px;
   margin: 0 auto;
+  transition: background-color 0.3s, box-shadow 0.3s;
+}
+
+.dark-mode-toggle {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s, border-color 0.3s, color 0.3s;
+}
+
+.dark-mode-toggle:hover {
+  background: var(--bg-tertiary);
 }

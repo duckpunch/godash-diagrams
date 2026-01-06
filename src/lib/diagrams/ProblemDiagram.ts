@@ -8,6 +8,7 @@ import { renderCaptureBar } from '../ui/CaptureBar'
 import { renderButtonBar } from '../ui/ButtonBar'
 import { renderTurnIndicator, renderResultIcon } from '../ui/TurnIndicator'
 import { ICONS } from '../ui/icons'
+import { COLORS } from '../ui/styles'
 import type { IDiagram, ParsedBoard, SequenceNode, SequenceTree, AnnotationInfo, AnnotationShape } from './types'
 import { ProblemResult, countCapturesFromDiff } from './types'
 
@@ -554,21 +555,21 @@ export class ProblemDiagram implements IDiagram {
     }
 
     // Dynamic bar styling based on result
-    let barBackground = '#f8f8f8'
-    let barBorderColor = '#9e9e9e'
-    let buttonBackground = '#e0e0e0'
-    let buttonColor = '#424242'
+    let barBackground = COLORS.background
+    let barBorderColor = COLORS.border
+    let buttonBackground = COLORS.buttonNormal
+    let buttonColor = COLORS.buttonText
 
     if (this.result === ProblemResult.Success) {
-      barBackground = '#e8f5e9'  // Light green
-      barBorderColor = '#2e7d32'  // Green
-      buttonBackground = '#a5d6a7'  // Medium green
-      buttonColor = '#1b5e20'  // Dark green
+      barBackground = COLORS.successLight
+      barBorderColor = COLORS.successMain
+      buttonBackground = COLORS.successButton
+      buttonColor = COLORS.successDark
     } else if (this.result === ProblemResult.Failure) {
-      barBackground = '#ffebee'  // Light red
-      barBorderColor = '#c62828'  // Red
-      buttonBackground = '#ffcdd2'  // Softer red
-      buttonColor = '#c62828'  // Red
+      barBackground = COLORS.failureLight
+      barBorderColor = COLORS.failureMain
+      buttonBackground = COLORS.failureButton
+      buttonColor = COLORS.failureMain
     }
 
     // Generate SVG using current board state

@@ -7,8 +7,57 @@ import { toError } from './render'
 import { ValidationError } from './validate'
 import type { DiagramType, IDiagram } from './model'
 import { DIAGRAM_TYPES, StaticDiagram, FreeplayDiagram, ProblemDiagram, ReplayDiagram } from './model'
+import libraryStyles from './ui/library.css?inline'
 
 const DEFAULT_DIAGRAM_CLASS = '.godash-diagram'
+const STYLE_ID = 'godash-diagrams-styles'
+
+// Store diagram instances for re-rendering on theme change
+const diagramRegistry = new Map<Element, IDiagram>()
+let themeObserver: MutationObserver | null = null
+
+/**
+ * Injects library CSS for UI bar theming (dark/light mode support)
+ */
+function injectStyles(): void {
+  // Check if styles are already injected
+  if (document.getElementById(STYLE_ID)) {
+    return
+  }
+
+  const styleEl = document.createElement('style')
+  styleEl.id = STYLE_ID
+  styleEl.textContent = libraryStyles
+  document.head.appendChild(styleEl)
+}
+
+/**
+ * Sets up theme change observer to re-render diagrams when dark/light mode changes
+ */
+function setupThemeObserver(): void {
+  // Only set up once
+  if (themeObserver) {
+    return
+  }
+
+  themeObserver = new MutationObserver((mutations) => {
+    for (const mutation of mutations) {
+      if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+        // Re-render all diagrams when theme changes
+        diagramRegistry.forEach((diagram) => {
+          diagram.render()
+        })
+        break
+      }
+    }
+  })
+
+  // Watch for class changes on root element (where .dark-mode is toggled)
+  themeObserver.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ['class']
+  })
+}
 
 interface DiagramOptions {
   diagramSource?: string
@@ -46,6 +95,9 @@ function renderDiagram(element: Element, source: string): void {
         return
     }
 
+    // Store diagram instance for theme change re-rendering
+    diagramRegistry.set(element, diagram)
+
     diagram.render()
   } catch (error) {
     if (error instanceof ValidationError) {
@@ -57,6 +109,12 @@ function renderDiagram(element: Element, source: string): void {
 }
 
 export function init(selector?: string, options?: DiagramOptions): void {
+  // Inject library styles for dark/light mode support
+  injectStyles()
+
+  // Set up theme change observer for automatic re-rendering
+  setupThemeObserver()
+
   const query = selector ?? DEFAULT_DIAGRAM_CLASS
   const elements = document.querySelectorAll(query)
 

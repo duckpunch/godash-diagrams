@@ -1,0 +1,67 @@
+/**
+ * Godash Diagrams Library Styles
+ * These CSS variables enable dark/light mode support for UI bars
+ */
+
+:root {
+  /* UI Bar Colors - Light Mode */
+  --godash-bar-bg: #f8f8f8;
+  --godash-bar-bg-light: #f0f0f0;
+  --godash-bar-border: #9e9e9e;
+  --godash-text-primary: #424242;
+  --godash-text-secondary: #616161;
+
+  /* Button Colors */
+  --godash-button-bg: #e0e0e0;
+  --godash-button-bg-disabled: #f0f0f0;
+  --godash-button-text: #424242;
+  --godash-button-text-disabled: #9e9e9e;
+
+  /* State Colors */
+  --godash-success-light: #e8f5e9;
+  --godash-success-main: #2e7d32;
+  --godash-success-button: #a5d6a7;
+  --godash-success-dark: #1b5e20;
+
+  --godash-failure-light: #ffebee;
+  --godash-failure-main: #c62828;
+  --godash-failure-button: #ffcdd2;
+
+  /* Stone outline (for visibility in different modes) */
+  --godash-black-stone-border: #424242;
+
+  /* Icon colors */
+  --godash-icon-failure: #c62828;
+}
+
+:root.dark-mode {
+  /* UI Bar Colors - Dark Mode */
+  --godash-bar-bg: #1a1a1a;
+  --godash-bar-bg-light: #2d2d2d;
+  --godash-bar-border: #404040;
+  --godash-text-primary: #ffffff;
+  --godash-text-secondary: #b0b0b0;
+
+  /* Button Colors (darker with better contrast) */
+  --godash-button-bg: #2d2d2d;
+  --godash-button-bg-disabled: #1a1a1a;
+  --godash-button-text: #ffffff;
+  --godash-button-text-disabled: #707070;
+
+  /* State Colors - Success (darker greens) */
+  --godash-success-light: #0d3d11;
+  --godash-success-main: #2e7d32;
+  --godash-success-button: #1b5e20;
+  --godash-success-dark: #4caf50;
+
+  /* State Colors - Failure (darker reds, lighter text for contrast) */
+  --godash-failure-light: #5d0f0f;
+  --godash-failure-main: #ff6b6b;
+  --godash-failure-button: #8b1e1e;
+
+  /* Stone outline (softer border for black stones in dark mode) */
+  --godash-black-stone-border: #b0b0b0;
+
+  /* Icon colors (lighter in dark mode for better contrast) */
+  --godash-icon-failure: #ff6b6b;
+}

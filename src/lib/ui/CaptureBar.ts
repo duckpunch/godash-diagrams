@@ -5,7 +5,7 @@ import { COLORS, SPACING, SIZES } from './styles'
  */
 const CAPTURE_ICONS = {
   white: '<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="8" fill="white" stroke="black" stroke-width="1.5"/><line x1="3" y1="3" x2="21" y2="21" stroke="red" stroke-width="2" stroke-linecap="round"/><line x1="21" y1="3" x2="3" y2="21" stroke="red" stroke-width="2" stroke-linecap="round"/></svg>',
-  black: '<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="8" fill="black" stroke="black" stroke-width="1.5"/><line x1="3" y1="3" x2="21" y2="21" stroke="red" stroke-width="2" stroke-linecap="round"/><line x1="21" y1="3" x2="3" y2="21" stroke="red" stroke-width="2" stroke-linecap="round"/></svg>',
+  black: '<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="8" fill="black" style="stroke: var(--godash-black-stone-border, black); stroke-width: 1.5"/><line x1="3" y1="3" x2="21" y2="21" stroke="red" stroke-width="2" stroke-linecap="round"/><line x1="21" y1="3" x2="3" y2="21" stroke="red" stroke-width="2" stroke-linecap="round"/></svg>',
 } as const
 
 /**

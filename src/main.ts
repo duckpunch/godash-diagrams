@@ -2,6 +2,35 @@ import './style.css'
 // Import your library (during dev, this imports from src/lib)
 import { init } from './lib/index'
 
+// Dark mode functionality
+const DARK_MODE_KEY = 'godash-diagrams-dark-mode'
+
+function initDarkMode() {
+  const darkModeToggle = document.getElementById('dark-mode-toggle')!
+  const root = document.documentElement
+
+  // Check for saved preference or system preference
+  const savedMode = localStorage.getItem(DARK_MODE_KEY)
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+  const isDark = savedMode ? savedMode === 'dark' : prefersDark
+
+  // Apply initial mode
+  if (isDark) {
+    root.classList.add('dark-mode')
+    darkModeToggle.textContent = '☀️ Light Mode'
+  }
+
+  // Toggle dark mode
+  darkModeToggle.addEventListener('click', () => {
+    const isDarkMode = root.classList.toggle('dark-mode')
+    localStorage.setItem(DARK_MODE_KEY, isDarkMode ? 'dark' : 'light')
+    darkModeToggle.textContent = isDarkMode ? '☀️ Light Mode' : '🌙 Dark Mode'
+  })
+}
+
+// Initialize dark mode
+initDarkMode()
+
 // Example sources for each diagram type - easy to tweak!
 const EXAMPLES = {
   static: `static

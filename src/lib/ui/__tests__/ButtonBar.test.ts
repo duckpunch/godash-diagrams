@@ -15,7 +15,7 @@ describe('ButtonBar', () => {
       expect(html).toContain('title="Reset"')
       expect(html).toContain(ICONS.reset)
       expect(html).toContain('cursor: pointer')
-      expect(html).toContain('background: #e0e0e0')
+      expect(html).toContain('background: var(--godash-button-bg, #e0e0e0)')
       expect(html).not.toContain('disabled')
     })
 
@@ -29,8 +29,8 @@ describe('ButtonBar', () => {
 
       expect(html).toContain('disabled')
       expect(html).toContain('cursor: not-allowed')
-      expect(html).toContain('background: #f0f0f0')
-      expect(html).toContain('color: #9e9e9e')
+      expect(html).toContain('background: var(--godash-button-bg-disabled, #f0f0f0)')
+      expect(html).toContain('color: var(--godash-button-text-disabled, #9e9e9e)')
     })
 
     it('applies custom button styling', () => {
@@ -205,8 +205,8 @@ describe('ButtonBar', () => {
         buttons: [{ id: 'reset', icon: ICONS.reset, title: 'Reset' }],
       })
 
-      expect(html).toContain('background: #f8f8f8')
-      expect(html).toContain('border: 1px solid #9e9e9e')
+      expect(html).toContain('background: var(--godash-bar-bg, #f8f8f8)')
+      expect(html).toContain('border: 1px solid var(--godash-bar-border, #9e9e9e)')
       expect(html).toContain('border-radius: 4px')
       expect(html).toContain('max-width: 500px')
     })

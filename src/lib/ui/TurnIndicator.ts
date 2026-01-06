@@ -19,7 +19,9 @@ import { ICONS } from './icons'
  */
 export function renderTurnIndicator(isBlack: boolean): string {
   const stoneColor = isBlack ? '#000000' : '#ffffff'
-  const stoneBorder = isBlack ? 'none' : '2px solid #424242'
+  const stoneBorder = isBlack
+    ? '2px solid var(--godash-black-stone-border, #424242)'
+    : '2px solid #424242'
   const playerName = isBlack ? 'Black' : 'White'
 
   return `<div style="width: 28px; height: 28px; border-radius: 50%; background: ${stoneColor}; border: ${stoneBorder};" title="${playerName} to play"></div>`
